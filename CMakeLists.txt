@@ -9,6 +9,7 @@ option(DARKNET_CPU "Enable cpu support" OFF)
 option(DARKNET_OPENCV "Enable OpenCV support" ON)
 option(DARKNET_GPU "Enable OpenCL support" ON)
 option(DARKNET_GPU_FAST "Enable OpenCL fast kernels support" ON)
+option(DARKNET_RPI "Enable Raspberry PI support" OFF)
 option(DARKNET_TESTING "Build the unit tests" OFF)
 option(DARKNET_DEBUG "Enable debug mode" OFF)
 option(DARKNET_STATIC "Build static library" ON)
@@ -27,10 +28,10 @@ set (DARKNET_LIBRARY_STATIC libdarknet_s)
 if (DARKNET_DEBUG OR DARKNET_TESTING)
     list (APPEND DARKNET_CFLAGS "-g")
 else()
-	list (APPEND DARKNET_CFLAGS "-Werror")
+	list (APPEND DARKNET_CFLAGS "-Wfatal-errors")
 	list (APPEND DARKNET_CFLAGS "-Wno-unused-variable")
 	list (APPEND DARKNET_CFLAGS "-fPIC")
-    list (APPEND DARKNET_CFLAGS "-mfpmath=sse")
+	list (APPEND DARKNET_CFLAGS "-mfpmath=sse")
 	list (APPEND DARKNET_CFLAGS "-O2")
 endif()
 
@@ -48,25 +49,29 @@ endif()
 # Find OpenCL
 if (DARKNET_GPU)
 	find_package(OpenCL REQUIRED)
-    find_package(clBLAS REQUIRED)
     add_library(opencl INTERFACE IMPORTED)
-    add_library(clblas INTERFACE IMPORTED)
     set_property(TARGET opencl PROPERTY
     	INTERFACE_INCLUDE_DIRECTORIES ${OpenCL_INCLUDE_DIRS})
-    set_property(TARGET clblas PROPERTY
-    	INTERFACE_INCLUDE_DIRECTORIES ${CLBLAS_INCLUDE_DIRS})
     set_property(TARGET opencl PROPERTY
         INTERFACE_LINK_LIBRARIES ${OpenCL_LIBRARY})
-    set_property(TARGET clblas PROPERTY
-        INTERFACE_LINK_LIBRARIES ${CLBLAS_LIBRARIES})
     list (APPEND DARKNET_DEFINITIONS GPU)
+	# Raspberry PI
+	if (DARKNET_RPI)
+		list (APPEND DARKNET_DEFINITIONS RPI)
+	else()
+		find_package(clBLAS REQUIRED)
+		add_library(clblas INTERFACE IMPORTED)
+		set_property(TARGET clblas PROPERTY
+			INTERFACE_INCLUDE_DIRECTORIES ${CLBLAS_INCLUDE_DIRS})
+		set_property(TARGET clblas PROPERTY
+			INTERFACE_LINK_LIBRARIES ${CLBLAS_LIBRARIES})
+	endif()
 endif()
 
 # Fast Training
 if (DARKNET_GPU_FAST)
 	list (APPEND DARKNET_DEFINITIONS GPU_FAST)
 endif()
-
 
 # Find Catch
 if (DARKNET_UNIT)
@@ -109,6 +114,8 @@ set (DARKNET_SOURCES
     "src/gru_layer.c"
     "src/im2col.c"
     "src/image.c"
+	"src/iseg_layer.c"
+	"examples/instance-segmenter.c"
     "src/layer.c"
     "src/list.c"
     "src/local_layer.c"
@@ -171,6 +178,7 @@ set (DARKNET_PUBLIC_HEADERS
     "src/gru_layer.h"
     "src/im2col.h"
     "src/image.h"
+	"src/iseg_layer.h"
     "src/layer.h"
     "src/list.h"
     "src/local_layer.h"

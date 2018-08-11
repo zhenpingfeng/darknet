@@ -422,6 +422,39 @@ char* concat(const char *s1, const char *s2)
 
 void opencl_load_buffer(const char *buffer, const size_t size, cl_program *output)
 {
+#ifdef RPI
+    cl_int clErr;
+
+    *output = clCreateProgramWithSource(opencl_context, CL_TRUE,
+                                        (const char**)&buffer, &size, &clErr);
+
+    if (clErr != CL_SUCCESS)
+    {
+        printf("opencl_load: could not create program. error: %s\n", clCheckError(clErr));
+        return;
+    }
+
+    clErr = clBuildProgram(
+            *output,
+            1,
+            &opencl_devices[opencl_device_id_t],
+            "-cl-denorms-are-zero "
+            "-cl-std=CL1.2 "
+            ,
+            NULL, NULL);
+
+    if (clErr != CL_SUCCESS)
+    {
+        printf("opencl_load: could not compile. error: %s\n", clCheckError(clErr));
+        size_t len;
+        char *ebuffer = (char*)calloc(0x10000000, sizeof(char));
+        clGetProgramBuildInfo(*output, opencl_devices[opencl_device_id_t], CL_PROGRAM_BUILD_LOG, 0x10000000 * sizeof(char), ebuffer, &len);
+        printf("CL_PROGRAM_BUILD_LOG:\n%s\n", ebuffer);
+        printf("CODE:\n%s\n", buffer);
+        free(ebuffer);
+        exit(1);
+    }
+#else
     cl_int clErr;
 
     cl_program prhd = 0;
@@ -507,6 +540,7 @@ void opencl_load_buffer(const char *buffer, const size_t size, cl_program *outpu
         printf("CL_PROGRAM_BUILD_LOG:\n%s\n", buffer);
         free(buffer);
     }
+#endif
 }
 
 void opencl_create_kernel(cl_program *program, const char *kernelName,
@@ -579,8 +613,9 @@ void opencl_init(int *gpus, int ngpus) {
     for (d = 0; d < ngpus; ++d) {
         opencl_device_id_t = d;
 
-        opencl_queues[opencl_device_id_t] = clCreateCommandQueue(opencl_context,
-                                                                 opencl_devices[opencl_device_id_t], CL_FALSE, &clErr);
+        opencl_queues[opencl_device_id_t] = clCreateCommandQueue(
+			                        opencl_context,
+                                                opencl_devices[opencl_device_id_t], CL_FALSE, &clErr);
 
         if (clErr != CL_SUCCESS) {
             printf("opencl_init: Could not create queue.\n");
@@ -612,19 +647,19 @@ void opencl_init(int *gpus, int ngpus) {
         printf("Device address bits: %d\n", cl_native_address_bits_s[opencl_device_id_t]);
         free(buffer);
 #endif
+        activation_kernel_init();
+        blas_kernel_init();
+        col2im_kernel_init();
+        convolutional_kernel_init();
+        im2col_kernel_init();
+        maxpool_kernel_init();
+        gemm_kernel_init();
+        avgpool_kernel_init();
+#ifndef RPI
+        crop_kernel_init();
+#endif
+        dropout_kernel_init();
     }
-
-    activation_kernel_init();
-    blas_kernel_init();
-    col2im_kernel_init();
-    convolutional_kernel_init();
-    im2col_kernel_init();
-    maxpool_kernel_init();
-    gemm_kernel_init();
-    avgpool_kernel_init();
-    crop_kernel_init();
-    dropout_kernel_init();
-
     // TODO: TEST CPU & GPU (3)
 #if defined(DARKNET_TEST_CPU_AND_GPU)
     opencl_cpu_gpu_test();
@@ -640,17 +675,6 @@ void opencl_init(int *gpus, int ngpus) {
 
 void opencl_deinit(int *gpus, int ngpus)
 {
-    activation_kernel_release();
-    blas_kernel_release();
-    col2im_kernel_release();
-    convolutional_kernel_release();
-    im2col_kernel_release();
-    maxpool_kernel_release();
-    gemm_kernel_release();
-    avgpool_kernel_release();
-    crop_kernel_release();
-    dropout_kernel_release();
-
     int a;
     int d;
     for (a = 0, d = ngpus-1; a < ngpus; --d, ++a) {
@@ -664,6 +688,19 @@ void opencl_deinit(int *gpus, int ngpus)
             opencl_queues[opencl_device_id_t] = 0;
             return;
         }
+
+        activation_kernel_release();
+        blas_kernel_release();
+        col2im_kernel_release();
+        convolutional_kernel_release();
+        im2col_kernel_release();
+        maxpool_kernel_release();
+        gemm_kernel_release();
+        avgpool_kernel_release();
+#ifndef RPI
+        crop_kernel_release();
+#endif
+        dropout_kernel_release();
 
         clReleaseCommandQueue(opencl_queues[opencl_device_id_t]);
         clReleaseContext(opencl_context);

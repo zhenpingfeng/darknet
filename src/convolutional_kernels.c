@@ -16,30 +16,46 @@
 #include "convolutional_kernels.cl"
 #include "layer.h"
 
-cl_kernel opencl_binarize_kernel;
-cl_kernel opencl_binarize_input_kernel;
-cl_kernel opencl_binarize_weights_kernel;
-cl_kernel opencl_smooth_kernel;
-cl_program opencl_convolutional_kernels_program;
+cl_program* opencl_convolutional_kernels_program;
+cl_kernel* opencl_binarize_kernel;
+cl_kernel* opencl_binarize_input_kernel;
+cl_kernel* opencl_binarize_weights_kernel;
+cl_kernel* opencl_smooth_kernel;
 
 void convolutional_kernel_init(void)
 {
-    opencl_load_buffer(convolutional_kernel_source, strlen(convolutional_kernel_source), &opencl_convolutional_kernels_program);
+    if (opencl_device_id_t == 0) {
+        opencl_convolutional_kernels_program = calloc(opencl_device_ct_t, sizeof(cl_program));
+        opencl_binarize_kernel = calloc(opencl_device_ct_t, sizeof(cl_kernel));
+        opencl_binarize_input_kernel = calloc(opencl_device_ct_t, sizeof(cl_kernel));
+        opencl_binarize_weights_kernel = calloc(opencl_device_ct_t, sizeof(cl_kernel));
+        opencl_smooth_kernel = calloc(opencl_device_ct_t, sizeof(cl_kernel));
+    }
 
-    opencl_create_kernel(&opencl_convolutional_kernels_program, "binarize_kernel", &opencl_binarize_kernel);
-    opencl_create_kernel(&opencl_convolutional_kernels_program, "binarize_input_kernel", &opencl_binarize_input_kernel);
-    opencl_create_kernel(&opencl_convolutional_kernels_program, "binarize_weights_kernel", &opencl_binarize_weights_kernel);
-    opencl_create_kernel(&opencl_convolutional_kernels_program, "smooth_kernel", &opencl_smooth_kernel);
+    opencl_load_buffer(convolutional_kernel_source, strlen(convolutional_kernel_source), &opencl_convolutional_kernels_program[opencl_device_id_t]);
+
+    opencl_create_kernel(&opencl_convolutional_kernels_program[opencl_device_id_t], "binarize_kernel", &opencl_binarize_kernel[opencl_device_id_t]);
+    opencl_create_kernel(&opencl_convolutional_kernels_program[opencl_device_id_t], "binarize_input_kernel", &opencl_binarize_input_kernel[opencl_device_id_t]);
+    opencl_create_kernel(&opencl_convolutional_kernels_program[opencl_device_id_t], "binarize_weights_kernel", &opencl_binarize_weights_kernel[opencl_device_id_t]);
+    opencl_create_kernel(&opencl_convolutional_kernels_program[opencl_device_id_t], "smooth_kernel", &opencl_smooth_kernel[opencl_device_id_t]);
 
 }
 
 void convolutional_kernel_release(void)
 {
-    clReleaseKernel(opencl_binarize_kernel); opencl_binarize_kernel = 0;
-    clReleaseKernel(opencl_binarize_input_kernel); opencl_binarize_input_kernel = 0;
-    clReleaseKernel(opencl_binarize_weights_kernel); opencl_binarize_weights_kernel = 0;
-    clReleaseKernel(opencl_smooth_kernel); opencl_smooth_kernel = 0;
-    clReleaseProgram(opencl_convolutional_kernels_program); opencl_convolutional_kernels_program = 0;
+    clReleaseKernel(opencl_binarize_kernel[opencl_device_id_t]); opencl_binarize_kernel[opencl_device_id_t] = 0;
+    clReleaseKernel(opencl_binarize_input_kernel[opencl_device_id_t]); opencl_binarize_input_kernel[opencl_device_id_t] = 0;
+    clReleaseKernel(opencl_binarize_weights_kernel[opencl_device_id_t]); opencl_binarize_weights_kernel[opencl_device_id_t] = 0;
+    clReleaseKernel(opencl_smooth_kernel[opencl_device_id_t]); opencl_smooth_kernel[opencl_device_id_t] = 0;
+    clReleaseProgram(opencl_convolutional_kernels_program[opencl_device_id_t]); opencl_convolutional_kernels_program[opencl_device_id_t] = 0;
+
+    if (opencl_device_id_t == opencl_device_ct_t-1) {
+        free(opencl_convolutional_kernels_program);
+        free(opencl_binarize_kernel);
+        free(opencl_binarize_input_kernel);
+        free(opencl_binarize_weights_kernel);
+        free(opencl_smooth_kernel);
+    }
 }
 
 void binarize_gpu(cl_mem x, int n, cl_mem binary)
@@ -48,7 +64,7 @@ void binarize_gpu(cl_mem x, int n, cl_mem binary)
     dim2 dimN;
     dimN = opencl_gridsize(n);
 
-    opencl_kernel(opencl_binarize_kernel, dimN, 6, &x, sizeof(cl_mem), &n, sizeof(cl_int), &binary, sizeof(cl_mem));
+    opencl_kernel(opencl_binarize_kernel[opencl_device_id_t], dimN, 6, &x, sizeof(cl_mem), &n, sizeof(cl_int), &binary, sizeof(cl_mem));
 }
 
 
@@ -57,7 +73,7 @@ void binarize_input_gpu(cl_mem input, int n, int size, cl_mem binary)
     dim2 dimN;
     dimN = opencl_gridsize(size);
 
-    opencl_kernel(opencl_binarize_input_kernel, dimN, 8, &input, sizeof(cl_mem), &n, sizeof(cl_int), &size, sizeof(cl_int), &binary, sizeof(cl_mem));
+    opencl_kernel(opencl_binarize_input_kernel[opencl_device_id_t], dimN, 8, &input, sizeof(cl_mem), &n, sizeof(cl_int), &size, sizeof(cl_int), &binary, sizeof(cl_mem));
 }
 
 
@@ -66,7 +82,7 @@ void binarize_weights_gpu(cl_mem weights, int n, int size, cl_mem binary)
     dim2 dimN;
     dimN = opencl_gridsize(n);
 
-    opencl_kernel(opencl_binarize_weights_kernel, dimN, 8, &weights, sizeof(cl_mem), &n, sizeof(cl_int), &size, sizeof(cl_int), &binary, sizeof(cl_mem));
+    opencl_kernel(opencl_binarize_weights_kernel[opencl_device_id_t], dimN, 8, &weights, sizeof(cl_mem), &n, sizeof(cl_int), &size, sizeof(cl_int), &binary, sizeof(cl_mem));
 }
 
 void swap_binary_gpu(convolutional_layer *l)
@@ -97,14 +113,18 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
     int n = l.out_w*l.out_h;
     for(i = 0; i < l.batch; ++i){
         for(j = 0; j < l.groups; ++j){
-            cl_mem_ext a = l.weights_gpu;
+            cl_mem_ext a = l.weights_gpu; // + j*l.nweights/l.groups;
             cl_mem_ext b = net.workspace_gpu;
-            cl_mem_ext c = l.output_gpu;
+            cl_mem_ext c = l.output_gpu; // + (i*l.groups + j)*n*m;
+            cl_mem_ext im = net.input_gpu; // + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
 
-            im2col_gpu(net.input_gpu.mem, (i*l.groups+j)*l.c/l.groups*l.h*l.w,
-                       l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b.mem);
-
-            gemm_offset_gpu(0,0,m,n,k,1,a,j*l.nweights/l.groups,k,b,0,n,1,c,(i*l.groups+j)*n*m,n);
+            if (l.size == 1){
+                b = im;
+                gemm_offset_gpu(0,0,m,n,k,1,a,j*l.nweights/l.groups,k,b,(i*l.groups + j)*l.c/l.groups*l.h*l.w,n,1,c,(i*l.groups + j)*n*m,n);
+            } else {
+                im2col_gpu(im.mem, (i*l.groups + j)*l.c/l.groups*l.h*l.w, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b.mem);
+                gemm_offset_gpu(0,0,m,n,k,1,a,j*l.nweights/l.groups,k,b,0,n,1,c,(i*l.groups + j)*n*m,n);
+            }
         }
     }
 
@@ -130,7 +150,7 @@ void smooth_layer(layer l, int size, float rate)
     dim2 dimN;
     dimN = opencl_gridsize(n);
 
-    opencl_kernel(opencl_smooth_kernel, dimN, 16, &l.output_gpu.mem, sizeof(cl_mem), &n, sizeof(cl_int), &l.w, sizeof(cl_int), &l.h, sizeof(cl_int), &l.c, sizeof(cl_int), &size, sizeof(cl_int), &rate, sizeof(cl_float), &l.delta_gpu.mem, sizeof(cl_mem));
+    opencl_kernel(opencl_smooth_kernel[opencl_device_id_t], dimN, 16, &l.output_gpu.mem, sizeof(cl_mem), &n, sizeof(cl_int), &l.w, sizeof(cl_int), &l.h, sizeof(cl_int), &l.c, sizeof(cl_int), &size, sizeof(cl_int), &rate, sizeof(cl_float), &l.delta_gpu.mem, sizeof(cl_mem));
 }
 
 void backward_convolutional_layer_gpu(convolutional_layer l, network net)
@@ -138,9 +158,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
     if(l.smooth){
         smooth_layer(l, 5, l.smooth);
     }
-
-    //constrain_gpu(l.outputs*l.batch, 1, net.delta_gpu, 1);
-
+    //constrain_gpu(l.outputs*l.batch, 1, l.delta_gpu, 1);
     gradient_array_gpu(l.output_gpu, l.outputs*l.batch, l.activation, l.delta_gpu);
 
 
@@ -149,34 +167,47 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
     } else {
         backward_bias_gpu(l.bias_updates_gpu, l.delta_gpu, l.batch, l.n, l.out_w*l.out_h);
     }
-
     cl_mem_ext original_input = net.input_gpu;
 
     if(l.xnor) net.input_gpu = l.binary_input_gpu;
-    int m = l.n;
-    int n = l.size*l.size*l.c;
+
+    int m = l.n/l.groups;
+    int n = l.size*l.size*l.c/l.groups;
     int k = l.out_w*l.out_h;
 
-    int i;
+    int i, j;
     for(i = 0; i < l.batch; ++i){
-        cl_mem_ext  a = l.delta_gpu;
-        cl_mem_ext  b = net.workspace_gpu;
-        cl_mem_ext  c = l.weight_updates_gpu;
+        for(j = 0; j < l.groups; ++j){
+            cl_mem_ext a = l.delta_gpu; // + (i*l.groups + j)*m*k;
+            cl_mem_ext b = net.workspace_gpu;
+            cl_mem_ext c = l.weight_updates_gpu; // + j*l.nweights/l.groups;
 
-        im2col_gpu(net.input_gpu.mem, i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, net.workspace_gpu.mem);
-        gemm_offset_gpu(0,1,m,n,k,1,a, i*m*k,k,b,0,k,1,c,0,n);
+            cl_mem_ext im  = net.input_gpu; // + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
+            cl_mem_ext imd = net.delta_gpu; // + (i*l.groups + j)*l.c/l.groups*l.h*l.w;
 
-        if(net.delta_gpu.mem){
-            if(l.binary || l.xnor) swap_binary_gpu(&l);
-            cl_mem_ext  a = l.weights_gpu;
-            cl_mem_ext  b = l.delta_gpu;
-            cl_mem_ext  c = net.workspace_gpu;
+            im2col_gpu(im.mem, (i*l.groups + j)*l.c/l.groups*l.h*l.w, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, b.mem);
+            gemm_offset_gpu(0,1,m,n,k,1,a,(i*l.groups + j)*m*k,k,b,0,k,1,c,j*l.nweights/l.groups,n);
 
-            gemm_offset_gpu(1,0,n,k,m,1,a,0,n,b, i*k*m,k,0,c,0,k);
+            if (net.delta_gpu.mem) {
+                if (l.binary || l.xnor) swap_binary_gpu(&l);
+                a = l.weights_gpu; // + j*l.nweights/l.groups;
+                b = l.delta_gpu; // + (i*l.groups + j)*m*k;
+                c = net.workspace_gpu;
 
-            col2im_gpu(net.workspace_gpu.mem, i*l.c*l.h*l.w, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, net.delta_gpu.mem);
-            if(l.binary || l.xnor) {
-                swap_binary_gpu(&l);
+                if (l.size == 1) {
+                    c = imd;
+                    gemm_offset_gpu(1,0,n,k,m,1,a,j*l.nweights/l.groups,n,b,(i*l.groups + j)*m*k,k,0,c,(i*l.groups + j)*l.c/l.groups*l.h*l.w,k);
+                }
+                else {
+                    gemm_offset_gpu(1,0,n,k,m,1,a,j*l.nweights/l.groups,n,b,(i*l.groups + j)*m*k,k,0,c,0,k);
+                }
+
+                if (l.size != 1) {
+                    col2im_gpu(net.workspace_gpu.mem, (i*l.groups + j)*l.c/l.groups*l.h*l.w, l.c/l.groups, l.h, l.w, l.size, l.stride, l.pad, imd.mem);
+                }
+                if(l.binary || l.xnor) {
+                    swap_binary_gpu(&l);
+                }
             }
             if(l.xnor) gradient_array_offset_gpu(original_input, i*l.c*l.h*l.w, l.c*l.h*l.w, HARDTAN, net.delta_gpu);
         }

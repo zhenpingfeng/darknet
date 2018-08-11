@@ -10,8 +10,7 @@ float bilinear_interpolate_kernel(__global float *image, int w, int h, float x, 
 
 float get_pixel_kernel(__global float *image, int w, int h, int x, int y, int c)
 {
-    if(x < 0 || x >= w || y < 0 || y >= h) return 0;
-    return image[x + w*(y + c*h)];
+    return (x < 0 || x >= w || y < 0 || y >= h) ? 0 : image[x + w*(y + c*h)];
 }
 
 float4 rgb_to_hsv_kernel(float4 rgb)
@@ -39,7 +38,7 @@ float4 rgb_to_hsv_kernel(float4 rgb)
         }
         if (h < 0) h += 6;
     }
-    return (float4) (h, s, v, 0.0);
+    return (float4) (h, s, v, 0);
 }
 
 float4 hsv_to_rgb_kernel(float4 hsv)
@@ -87,10 +86,13 @@ float bilinear_interpolate_kernel(__global float *image, int w, int h, float x, 
     float dx = x - ix;
     float dy = y - iy;
 
-    float val = (1-dy) * (1-dx) * get_pixel_kernel(image, w, h, ix, iy, c) + 
-        dy     * (1-dx) * get_pixel_kernel(image, w, h, ix, iy+1, c) + 
-        (1-dy) *   dx   * get_pixel_kernel(image, w, h, ix+1, iy, c) +
-        dy     *   dx   * get_pixel_kernel(image, w, h, ix+1, iy+1, c);
+    float val1 = ((1-dy) * (1-dx) * get_pixel_kernel(image, w, h, ix, iy, c));
+    float val2 = (dy     * (1-dx) * get_pixel_kernel(image, w, h, ix, iy+1, c));
+    float val3 = ((1-dy) *   dx   * get_pixel_kernel(image, w, h, ix+1, iy, c));
+    float val4 = (dy     *   dx   * get_pixel_kernel(image, w, h, ix+1, iy+1, c));
+
+    float val = val1 + val2 + val3 + val4;
+
     return val;
 }
 
@@ -103,9 +105,11 @@ __kernel void levels_image_kernel(__global float *image, __global float *rand, i
     id /= w;
     int y = id % h;
     id /= h;
+
     float rshift = rand[0];
     float gshift = rand[1];
     float bshift = rand[2];
+
     float r0 = rand[8*id + 0];
     float r1 = rand[8*id + 1];
     float r2 = rand[8*id + 2];
@@ -118,9 +122,11 @@ __kernel void levels_image_kernel(__global float *image, __global float *rand, i
 
     size_t offset = id * h * w * 3;
     image += offset;
+
     float r = image[x + w*(y + h*0)];
     float g = image[x + w*(y + h*1)];
     float b = image[x + w*(y + h*2)];
+
     float4 rgb = (float4)(r,g,b, 0.0);
     if(train){
         float4 hsv = rgb_to_hsv_kernel(rgb);
@@ -130,6 +136,7 @@ __kernel void levels_image_kernel(__global float *image, __global float *rand, i
     } else {
         shift = 0;
     }
+    
     image[x + w*(y + h*0)] = rgb.x*scale + translate + (rshift - .5)*shift;
     image[x + w*(y + h*1)] = rgb.y*scale + translate + (gshift - .5)*shift;
     image[x + w*(y + h*2)] = rgb.z*scale + translate + (bshift - .5)*shift;
@@ -170,7 +177,7 @@ __kernel void forward_crop_layer_kernel(__global float *input, __global float *r
 
     input += w*h*c*b;
 
-    float x = (flip) ? w - dw - j - 1 : j + dw;    
+    float x = (flip!=0) ? w - dw - j - 1 : j + dw;    
     float y = i + dh;
 
     float rx = cos(angle)*(x-cx) - sin(angle)*(y-cy) + cx;

@@ -5,8 +5,8 @@ static const char* const maxpool_kernel_source = CONVERT_KERNEL_TO_STRING(
 
 __kernel void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, int pad, __global float *input, __global float *output, __global int *indexes)
 {
-    int h = (in_h + 2*pad)/stride;
-    int w = (in_w + 2*pad)/stride;
+    int h = (in_h + pad - size)/stride + 1;
+    int w = (in_w + pad - size)/stride + 1;
     int c = in_c;
 
     int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
@@ -20,8 +20,8 @@ __kernel void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, 
     id /= c;
     int b = id;
 
-    int w_offset = -pad;
-    int h_offset = -pad;
+    int w_offset = -pad/2;
+    int h_offset = -pad/2;
 
     int out_index = j + w*(i + h*(k + c*b));
     float max = -FLT_MAX;
@@ -45,8 +45,8 @@ __kernel void forward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, 
 
 __kernel void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c, int stride, int size, int pad, __global float *delta, __global float *prev_delta, __global int *indexes)
 {
-    int h = (in_h + 2*pad)/stride;
-    int w = (in_w + 2*pad)/stride;
+    int h = (in_h + pad - size)/stride + 1;
+    int w = (in_w + pad - size)/stride + 1;
     int c = in_c;
     int area = (size-1)/stride;
 
@@ -62,8 +62,8 @@ __kernel void backward_maxpool_layer_kernel(int n, int in_h, int in_w, int in_c,
     id /= in_c;
     int b = id;
 
-    int w_offset = -pad;
-    int h_offset = -pad;
+    int w_offset = -pad/2;
+    int h_offset = -pad/2;
 
     float d = 0;
     int l, m;

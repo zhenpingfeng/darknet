@@ -80,6 +80,7 @@ void backward_scale_cpu(float *x_norm, float *delta, int batch, int n, int size,
     }
 }
 */
+/*
 __kernel void backward_scale_kernel(int N, __global float *x_norm, __global float *delta, int batch, int n, int size, __global float *scale_updates)
 {
     int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
@@ -92,7 +93,19 @@ __kernel void backward_scale_kernel(int N, __global float *x_norm, __global floa
     int index = i + size*(f + n*b);
     scale_updates[f] += delta[index] * x_norm[index];
 }
-
+*/
+__kernel void backward_scale_kernel(int threads, __global float *x_norm, __global float *delta, int batch, int n, int size, __global float *scale_updates)
+{
+    int i = get_global_id(1);
+    int t = get_global_id(0);
+    int j, k;
+    for(j = 0; j < n; ++j){
+        for(k = 0; k < size; k += threads){
+            int index = size*(i + batch*j) + k+t;
+            scale_updates[j] += (k+t < size) ? delta[index]*x_norm[index] : 0;
+        }
+    }
+}
 
 /*
 void add_bias(float *output, float *biases, int batch, int n, int size)
@@ -139,6 +152,7 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
     }
 }
 */
+/*
 __kernel void backward_bias_kernel(int N, __global float *bias_updates, __global float *delta, int batch, int n, int size)
 {
     int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
@@ -151,6 +165,19 @@ __kernel void backward_bias_kernel(int N, __global float *bias_updates, __global
 
     int index = j + i*size + b*n*size;
     bias_updates[i] += delta[index];
+}
+*/
+__kernel void backward_bias_kernel(int threads, __global float *bias_updates, __global float *delta, int batch, int n, int size)
+{
+    int i = get_global_id(1);
+    int t = get_global_id(0);
+    int j, k;
+    for(j = 0; j < n; ++j){
+        for(k = 0; k < size; k += threads){
+            int index = size*(i + batch*j) + k+t;
+            bias_updates[j] += (k+t < size) ? delta[index] : 0;
+        }
+    }
 }
 
 
@@ -659,7 +686,7 @@ __kernel void softmax_x_ent_kernel(int n, __global float *pred, __global float *
     if(i < n) {
         float t = truth[i];
         float p = pred[i];
-        error[i] = (t) ? -log(p) : 0;
+        error[i] = (t!=0) ? -log(p) : 0;
         delta[i] = t-p;
     }
 }
@@ -707,7 +734,7 @@ __kernel void wgan_kernel(int n, __global float *pred, __global float *truth, __
 {
     int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
     if(i < n){
-        error[i] = truth[i] ? -pred[i] : pred[i];
+        error[i] = (truth[i]!=0) ? -pred[i] : pred[i];
         delta[i] = (truth[i] > 0) ? 1 : -1;
     }
 }
@@ -859,43 +886,6 @@ __kernel void dot_kernel(__global float *output, float scale, int batch, int n, 
 }
 
 //Source: https://www.sharcnet.ca/help/index.php/Porting_CUDA_to_OpenCL
-void atomic_add_global(volatile global float *source, const float operand);
-
-void atomic_add_global(volatile global float *source, const float operand) {
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } newVal;
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } prevVal;
-
-    do {
-        prevVal.floatVal = *source;
-        newVal.floatVal = prevVal.floatVal + operand;
-    } while (atomic_cmpxchg((volatile global unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
-}
-
-void atomic_add_local(volatile local float *source, const float operand);
-
-void atomic_add_local(volatile local float *source, const float operand) {
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } newVal;
-
-    union {
-        unsigned int intVal;
-        float floatVal;
-    } prevVal;
-
-    do {
-        prevVal.floatVal = *source;
-        newVal.floatVal = prevVal.floatVal + operand;
-    } while (atomic_cmpxchg((volatile local unsigned int *)source, prevVal.intVal, newVal.intVal) != prevVal.intVal);
-}
-
 inline void atomicAdd_f(__global float* address, float value)
 {
     float old = value;
@@ -922,7 +912,7 @@ __kernel void upsample_kernel(int N, __global float *x, int w, int h, int c, int
     int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;
 
     if(forward) out[out_index] += scale * x[in_index];
-    else atomic_add_global(x+in_index, scale * out[out_index]);
+    else atomicAdd_f(x+in_index, scale * out[out_index]);
 }
 
 __kernel void gemm_kernel(

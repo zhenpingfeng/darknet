@@ -167,10 +167,13 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA,
 
 #ifdef GPU
 
+#ifndef RPI
 #include "clBLAS.h"
+#endif
 
 void gemm_kernel_init(void)
 {
+#ifndef RPI
     cl_int clErr;
     clErr = clblasSetup();
 
@@ -178,11 +181,14 @@ void gemm_kernel_init(void)
     {
         printf("gemm_kernel_init: Could not setup clBLAS. Errorcode: %d\n", clErr);
     }
+#endif
 }
 
 void gemm_kernel_release(void)
 {
+#ifndef RPI
     clblasTeardown();
+#endif
 }
 
 cl_mem_ext random_matrix_gpu(int rows, int cols)
@@ -195,6 +201,7 @@ cl_mem_ext random_matrix_gpu(int rows, int cols)
     return opencl_make_array(m, rows*cols);
 }
 
+#ifndef RPI
 void gemm_offset_gpu(int TA, int TB, int M, int N, int K,
               float ALPHA,
               cl_mem_ext A_gpu, int offset_A, int lda,
@@ -212,13 +219,14 @@ void gemm_offset_gpu(int TA, int TB, int M, int N, int K,
                         B_gpu.mem, offset_B, ldb,
                         BETA,
                         C_gpu.mem, offset_C, ldc,
-                        opencl_device_ct_t, opencl_queues, 0, NULL, NULL);
+                        1, &opencl_queues[opencl_device_id_t], 0, NULL, NULL);
 
     if (clErr != CL_SUCCESS)
     {
         printf("gemm_gpu: clblasSgemm failed. Errorcode: %d\n", clErr);
     }
 }
+#endif
 
 void gemm_gpu(int TA, int TB, int M, int N, int K,
               float ALPHA,

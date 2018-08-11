@@ -1,3 +1,4 @@
+#include <stdlib.h> 
 #include <string.h>
 
 #include "im2col.h"
@@ -6,19 +7,29 @@
 
 #ifdef GPU
 
-cl_kernel opencl_im2col_gpu_kernel;
-cl_program opencl_im2col_kernels_program;
+cl_program* opencl_im2col_kernels_program;
+cl_kernel* opencl_im2col_gpu_kernel;
 
 void im2col_kernel_init(void)
 {
-    opencl_load_buffer(im2col_kernel_source, strlen(im2col_kernel_source), &opencl_im2col_kernels_program);
-    opencl_create_kernel(&opencl_im2col_kernels_program, "im2col_gpu_kernel", &opencl_im2col_gpu_kernel);
+    if (opencl_device_id_t == 0) {
+        opencl_im2col_kernels_program = calloc(opencl_device_ct_t, sizeof(cl_program));
+        opencl_im2col_gpu_kernel = calloc(opencl_device_ct_t, sizeof(cl_kernel));
+    }
+
+    opencl_load_buffer(im2col_kernel_source, strlen(im2col_kernel_source), &opencl_im2col_kernels_program[opencl_device_id_t]);
+    opencl_create_kernel(&opencl_im2col_kernels_program[opencl_device_id_t], "im2col_gpu_kernel", &opencl_im2col_gpu_kernel[opencl_device_id_t]);
 }
 
 void im2col_kernel_release(void)
 {
-    clReleaseKernel(opencl_im2col_gpu_kernel); opencl_im2col_gpu_kernel = 0;
-    clReleaseProgram(opencl_im2col_kernels_program); opencl_im2col_kernels_program = 0;
+    clReleaseKernel(opencl_im2col_gpu_kernel[opencl_device_id_t]); opencl_im2col_gpu_kernel[opencl_device_id_t] = 0;
+    clReleaseProgram(opencl_im2col_kernels_program[opencl_device_id_t]); opencl_im2col_kernels_program[opencl_device_id_t] = 0;
+
+    if (opencl_device_id_t == opencl_device_ct_t-1) {
+	free(opencl_im2col_kernels_program);
+        free(opencl_im2col_gpu_kernel);
+    }
 }
 
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
@@ -38,7 +49,7 @@ void im2col_gpu(cl_mem im, int offset,
 
     int zero = 0;
 
-    opencl_kernel(opencl_im2col_gpu_kernel, dimGrid, 24,
+    opencl_kernel(opencl_im2col_gpu_kernel[opencl_device_id_t], dimGrid, 24,
         &num_kernels, sizeof(cl_int),
         &im, sizeof(cl_mem),
         &height, sizeof(cl_int),

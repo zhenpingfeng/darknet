@@ -24,6 +24,13 @@
 
 #include <math.h>
 
+#ifndef MIN
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#endif
+#ifndef MAX
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#endif
+
 extern int *gpusg;
 extern int ngpusg;
 extern __thread int opencl_device_id_t;

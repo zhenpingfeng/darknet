@@ -26,9 +26,10 @@
     <session id="-1374244216">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="3" />
+          <entry key="project.closed" value="4" />
+          <entry key="project.open.time.5" value="1" />
           <entry key="project.open.time.7" value="3" />
-          <entry key="project.opened" value="3" />
+          <entry key="project.opened" value="4" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -62,8 +63,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/network.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="14">
-              <caret line="772" lean-forward="true" selection-start-line="772" selection-end-line="772" />
+            <state relative-caret-position="15">
+              <caret line="772" selection-start-line="772" selection-end-line="772" />
             </state>
           </provider>
         </entry>
@@ -118,6 +119,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -129,7 +131,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -172,6 +173,16 @@
       </method>
     </configuration>
     <configuration name="bindarknet (Yv2)" type="CMakeRunConfiguration" factoryName="Application" singleton="true" PROGRAM_PARAMS="detect cfg/yolov2.cfg ../weights/yolov2.weights data/dog.jpg" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="darknet" TARGET_NAME="bindarknet" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="darknet" RUN_TARGET_NAME="bindarknet">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="bindarknet (Yv3-sppDemo)" type="CMakeRunConfiguration" factoryName="Application" singleton="true" PROGRAM_PARAMS="detector demo cfg/coco.data cfg/yolov3-spp.cfg ../weights/yolov3-spp.weights -i 1 -c 0" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="darknet" TARGET_NAME="bindarknet" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="darknet" RUN_TARGET_NAME="bindarknet">
+      <method v="2">
+        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="bindarknet (Yv3-spp)" type="CMakeRunConfiguration" factoryName="Application" singleton="true" PROGRAM_PARAMS="detect cfg/yolov3-spp.cfg ../weights/yolov3-spp.weights data/dog.jpg" WORKING_DIR="file://$PROJECT_DIR$" PASS_PARENT_ENVS_2="true" PROJECT_NAME="darknet" TARGET_NAME="bindarknet" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="darknet" RUN_TARGET_NAME="bindarknet">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
       </method>
@@ -255,7 +266,9 @@
       <item itemvalue="Application.bindarknet (Yv2Demo)" />
       <item itemvalue="Application.bindarknet (tYv2)" />
       <item itemvalue="Application.bindarknet (Yv3)" />
+      <item itemvalue="Application.bindarknet (Yv3-spp)" />
       <item itemvalue="Application.bindarknet (Yv3Demo)" />
+      <item itemvalue="Application.bindarknet (Yv3-sppDemo)" />
       <item itemvalue="Application.bindarknet (tYv3)" />
       <item itemvalue="Application.bindarknet (cifar)" />
       <item itemvalue="Application.bindarknet (test)" />
@@ -282,17 +295,18 @@
       <workItem from="1533071582343" duration="14000" />
       <workItem from="1533072395045" duration="2200000" />
       <workItem from="1533076392813" duration="90000" />
+      <workItem from="1533465199569" duration="295000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="578521000" />
+    <option name="totallyTimeSpent" value="578816000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="23" width="1440" height="836" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26037195" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.2639485" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
@@ -375,8 +389,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/network.c">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="14">
-          <caret line="772" lean-forward="true" selection-start-line="772" selection-end-line="772" />
+        <state relative-caret-position="15">
+          <caret line="772" selection-start-line="772" selection-end-line="772" />
         </state>
       </provider>
     </entry>
