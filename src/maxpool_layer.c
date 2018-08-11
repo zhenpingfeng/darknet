@@ -1,5 +1,5 @@
 #include "maxpool_layer.h"
-#include "cuda.h"
+#include "opencl.h"
 #include <stdio.h>
 
 image get_maxpool_image(maxpool_layer l)
@@ -41,11 +41,13 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
     l.forward = forward_maxpool_layer;
     l.backward = backward_maxpool_layer;
     #ifdef GPU
-    l.forward_gpu = forward_maxpool_layer_gpu;
-    l.backward_gpu = backward_maxpool_layer_gpu;
-    l.indexes_gpu = cuda_make_int_array(0, output_size);
-    l.output_gpu  = cuda_make_array(l.output, output_size);
-    l.delta_gpu   = cuda_make_array(l.delta, output_size);
+    if (gpu_index >= 0) {
+        l.forward_gpu = forward_maxpool_layer_gpu;
+        l.backward_gpu = backward_maxpool_layer_gpu;
+        l.indexes_gpu = opencl_make_int_array(0, output_size);
+        l.output_gpu = opencl_make_array(l.output, output_size);
+        l.delta_gpu = opencl_make_array(l.delta, output_size);
+    }
     #endif
     fprintf(stderr, "max          %d x %d / %d  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", size, size, stride, w, h, c, l.out_w, l.out_h, l.out_c);
     return l;
@@ -53,6 +55,13 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
 
 void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 {
+#ifdef GPU
+    if (gpu_index >= 0) {
+        opencl_free_gpu_only(l->indexes_gpu);
+        opencl_free_gpu_only(l->output_gpu);
+        opencl_free_gpu_only(l->delta_gpu);
+    }
+#endif
     l->h = h;
     l->w = w;
     l->inputs = h*w*l->c;
@@ -67,12 +76,11 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
     l->delta = realloc(l->delta, output_size * sizeof(float));
 
     #ifdef GPU
-    cuda_free((float *)l->indexes_gpu);
-    cuda_free(l->output_gpu);
-    cuda_free(l->delta_gpu);
-    l->indexes_gpu = cuda_make_int_array(0, output_size);
-    l->output_gpu  = cuda_make_array(l->output, output_size);
-    l->delta_gpu   = cuda_make_array(l->delta,  output_size);
+    if (gpu_index >= 0) {
+        l->indexes_gpu = opencl_make_int_array(l->indexes, output_size);
+        l->output_gpu = opencl_make_array(l->output, output_size);
+        l->delta_gpu = opencl_make_array(l->delta, output_size);
+    }
     #endif
 }
 

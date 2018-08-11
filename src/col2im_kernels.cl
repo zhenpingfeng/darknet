@@ -1,23 +1,24 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#ifndef __COL2IM_KERNELS_CL__
+#define __COL2IM_KERNELS_CL__
 
-extern "C" {
-#include "col2im.h"
-#include "cuda.h"
-}
+// The comment-out cuda code is from the src, and I would like to port to
+// opencl kernel code as below.
 
 // src: https://github.com/BVLC/caffe/blob/master/src/caffe/util/im2col.cu
 // You may also want to read: https://github.com/BVLC/caffe/blob/master/LICENSE
 
-__global__ void col2im_gpu_kernel(const int n, const float* data_col,
-        const int height, const int width, const int ksize,
-        const int pad,
-        const int stride,
-        const int height_col, const int width_col,
-        float *data_im) {
-    int index = blockIdx.x*blockDim.x+threadIdx.x;
-    for(; index < n; index += blockDim.x*gridDim.x){
+static const char* const col2im_kernel_source = CONVERT_KERNEL_TO_STRING(
+
+__kernel void col2im_gpu_kernel(int n, __global float* data_col,
+                                int height, int width, int ksize,
+                                int pad,
+                                int stride,
+                                int height_col, int width_col,
+                                __global float *data_im,
+                                int col_offset,
+                                int img_offset) {
+    int index = get_global_id(1) * get_global_size(0) + get_global_id(0);
+    for(; index < n; index += get_global_size(1) * get_global_size(0)){
         float val = 0;
         int w = index % width + pad;
         int h = (index / width) % height + pad;
@@ -34,25 +35,11 @@ __global__ void col2im_gpu_kernel(const int n, const float* data_col,
         int coeff_w_col = (1 - stride * height_col * width_col);
         for (int h_col = h_col_start; h_col < h_col_end; ++h_col) {
             for (int w_col = w_col_start; w_col < w_col_end; ++w_col) {
-                val += data_col[offset + h_col * coeff_h_col + w_col * coeff_w_col];
+                val += data_col[col_offset + offset + h_col * coeff_h_col + w_col * coeff_w_col];
             }
         }
-        data_im[index] += val;
+        data_im[img_offset + index] += val;
     }
 }
-
-void col2im_gpu(float *data_col,
-        int channels, int height, int width,
-        int ksize, int stride, int pad, float *data_im){
-    // We are going to launch channels * height_col * width_col kernels, each
-    // kernel responsible for copying a single-channel grid.
-    int height_col = (height + 2 * pad - ksize) / stride + 1;
-    int width_col = (width + 2 * pad - ksize) / stride + 1;
-    int num_kernels = channels * height * width;
-    col2im_gpu_kernel<<<(num_kernels+BLOCK-1)/BLOCK,
-        BLOCK>>>(
-                num_kernels, data_col, height, width, ksize, pad,
-                stride, height_col,
-                width_col, data_im);
-}
-
+);
+#endif

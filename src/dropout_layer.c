@@ -1,6 +1,6 @@
 #include "dropout_layer.h"
 #include "utils.h"
-#include "cuda.h"
+#include "opencl.h"
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -17,9 +17,11 @@ dropout_layer make_dropout_layer(int batch, int inputs, float probability)
     l.forward = forward_dropout_layer;
     l.backward = backward_dropout_layer;
     #ifdef GPU
-    l.forward_gpu = forward_dropout_layer_gpu;
-    l.backward_gpu = backward_dropout_layer_gpu;
-    l.rand_gpu = cuda_make_array(l.rand, inputs*batch);
+    if (gpu_index >= 0) {
+        l.forward_gpu = forward_dropout_layer_gpu;
+        l.backward_gpu = backward_dropout_layer_gpu;
+        l.rand_gpu = opencl_make_array(l.rand, inputs * batch);
+    }
     #endif
     fprintf(stderr, "dropout       p = %.2f               %4d  ->  %4d\n", probability, inputs, inputs);
     return l;
@@ -29,9 +31,10 @@ void resize_dropout_layer(dropout_layer *l, int inputs)
 {
     l->rand = realloc(l->rand, l->inputs*l->batch*sizeof(float));
     #ifdef GPU
-    cuda_free(l->rand_gpu);
-
-    l->rand_gpu = cuda_make_array(l->rand, inputs*l->batch);
+    if (gpu_index >= 0) {
+        opencl_free(l->rand_gpu);
+        l->rand_gpu = opencl_make_array(l->rand, inputs * l->batch);
+    }
     #endif
 }
 

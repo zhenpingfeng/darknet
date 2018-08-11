@@ -160,6 +160,19 @@ float find_float_arg(int argc, char **argv, char *arg, float def)
     return def;
 }
 
+char *read_char_arg(int argc, char **argv, char *arg, char *def)
+{
+    int i;
+    for(i = 0; i < argc-1; ++i){
+        if(!argv[i]) continue;
+        if(0==strcmp(argv[i], arg)){
+            def = argv[i+1];
+            break;
+        }
+    }
+    return def;
+}
+
 char *find_char_arg(int argc, char **argv, char *arg, char *def)
 {
     int i;
@@ -174,7 +187,6 @@ char *find_char_arg(int argc, char **argv, char *arg, char *def)
     }
     return def;
 }
-
 
 char *basecfg(char *cfgfile)
 {

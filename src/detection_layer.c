@@ -3,7 +3,7 @@
 #include "softmax_layer.h"
 #include "blas.h"
 #include "box.h"
-#include "cuda.h"
+#include "opencl.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -35,10 +35,12 @@ detection_layer make_detection_layer(int batch, int inputs, int n, int side, int
     l.forward = forward_detection_layer;
     l.backward = backward_detection_layer;
 #ifdef GPU
-    l.forward_gpu = forward_detection_layer_gpu;
-    l.backward_gpu = backward_detection_layer_gpu;
-    l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
-    l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
+    if (gpu_index >= 0) {
+        l.forward_gpu = forward_detection_layer_gpu;
+        l.backward_gpu = backward_detection_layer_gpu;
+        l.output_gpu = opencl_make_array(l.output, batch * l.outputs);
+        l.delta_gpu = opencl_make_array(l.delta, batch * l.outputs);
+    }
 #endif
 
     fprintf(stderr, "Detection Layer\n");
@@ -260,10 +262,10 @@ void forward_detection_layer_gpu(const detection_layer l, network net)
         return;
     }
 
-    cuda_pull_array(net.input_gpu, net.input, l.batch*l.inputs);
+    opencl_pull_array(net.input_gpu, net.input, l.batch*l.inputs);
     forward_detection_layer(l, net);
-    cuda_push_array(l.output_gpu, l.output, l.batch*l.outputs);
-    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
+    opencl_push_array(l.output_gpu, l.output, l.batch*l.outputs);
+    opencl_push_array(l.delta_gpu, l.delta, l.batch*l.inputs);
 }
 
 void backward_detection_layer_gpu(detection_layer l, network net)

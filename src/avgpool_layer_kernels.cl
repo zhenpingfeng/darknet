@@ -1,15 +1,11 @@
-#include "cuda_runtime.h"
-#include "curand.h"
-#include "cublas_v2.h"
+#ifndef __AVGPOOL_LAYER_KERNELS_CL__
+#define __AVGPOOL_LAYER_KERNELS_CL__
 
-extern "C" {
-#include "avgpool_layer.h"
-#include "cuda.h"
-}
+static const char* const avgpool_layer_kernel_source = CONVERT_KERNEL_TO_STRING(
 
-__global__ void forward_avgpool_layer_kernel(int n, int w, int h, int c, float *input, float *output)
+__kernel void forward_avgpool_layer_kernel(int n, int w, int h, int c, __global float *input, __global float *output)
 {
-    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
     if(id >= n) return;
 
     int k = id % c;
@@ -26,9 +22,9 @@ __global__ void forward_avgpool_layer_kernel(int n, int w, int h, int c, float *
     output[out_index] /= w*h;
 }
 
-__global__ void backward_avgpool_layer_kernel(int n, int w, int h, int c, float *in_delta, float *out_delta)
+__kernel void backward_avgpool_layer_kernel(int n, int w, int h, int c, __global float *in_delta, __global float *out_delta)
 {
-    int id = (blockIdx.x + blockIdx.y*gridDim.x) * blockDim.x + threadIdx.x;
+    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
     if(id >= n) return;
 
     int k = id % c;
@@ -42,20 +38,6 @@ __global__ void backward_avgpool_layer_kernel(int n, int w, int h, int c, float 
         in_delta[in_index] += out_delta[out_index] / (w*h);
     }
 }
+);
 
-extern "C" void forward_avgpool_layer_gpu(avgpool_layer layer, network net)
-{
-    size_t n = layer.c*layer.batch;
-
-    forward_avgpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.w, layer.h, layer.c, net.input_gpu, layer.output_gpu);
-    check_error(cudaPeekAtLastError());
-}
-
-extern "C" void backward_avgpool_layer_gpu(avgpool_layer layer, network net)
-{
-    size_t n = layer.c*layer.batch;
-
-    backward_avgpool_layer_kernel<<<cuda_gridsize(n), BLOCK>>>(n, layer.w, layer.h, layer.c, net.delta_gpu, layer.delta_gpu);
-    check_error(cudaPeekAtLastError());
-}
-
+#endif

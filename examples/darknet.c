@@ -413,12 +413,22 @@ int main(int argc, char **argv)
     if(find_arg(argc, argv, "-nogpu")) {
         gpu_index = -1;
     }
+    char *gpu_list = read_char_arg(argc, argv, "-gpus", *argv);
+    int ngpus;
+    int *gpus = read_intlist(gpu_list, &ngpus, gpu_index);
+
+    if (ngpus == 1) {
+        gpus[0] = gpu_index;
+    }
 
 #ifndef GPU
     gpu_index = -1;
 #else
-    if(gpu_index >= 0){
-        cuda_set_device(gpu_index);
+    if (gpu_index >= 0) {
+        gpusg = gpus;
+        ngpusg = ngpus;
+        gpu_index = gpus[0];
+        opencl_init(gpus, ngpus);
     }
 #endif
 
@@ -501,6 +511,10 @@ int main(int argc, char **argv)
     } else {
         fprintf(stderr, "Not an option: %s\n", argv[1]);
     }
+#ifdef GPU
+    if (gpu_index >= 0) {
+        opencl_deinit(gpus, ngpus);
+    }
+#endif
     return 0;
 }
-
