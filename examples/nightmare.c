@@ -149,7 +149,6 @@ void reconstruct_picture(network *net, float *features, image recon, image updat
         backward_network_gpu(net);
 
         opencl_pull_array(net->delta_gpu, delta.data, delta.w*delta.h*delta.c);
-
         opencl_free(net->delta_gpu);
 #else
         net->input = recon.data;

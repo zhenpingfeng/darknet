@@ -21,10 +21,10 @@ void forward_deconvolutional_layer_gpu(layer l, network net)
 
     for(i = 0; i < l.batch; ++i){
         cl_mem_ext a = l.weights_gpu;
-        cl_mem_ext b = net.input_gpu.add(net.input_gpu, i*l.c*l.h*l.w, l.c*l.h*l.w);
+        cl_mem_ext b = net.input_gpu; // + i*l.c*l.h*l.w;
         cl_mem_ext c = net.workspace_gpu;
 
-        gemm_gpu(0,1,m,n,k,1,a,m,b,n,0,c,n);
+        gemm_offset_gpu(0,1,m,n,k,1,a,0,m,b,i*l.c*l.h*l.w,n,0,c,0,n);
 
         col2im_gpu(net.workspace_gpu.mem, i*l.outputs, l.out_c, l.out_h, l.out_w, l.size, l.stride, l.pad, l.output_gpu.mem);
     }
@@ -56,25 +56,25 @@ void backward_deconvolutional_layer_gpu(layer l, network net)
         int n = l.size*l.size*l.n;
         int k = l.h*l.w;
 
-        cl_mem_ext a = net.input_gpu.add(net.input_gpu, i*m*k, m*k);
+        cl_mem_ext a = net.input_gpu; // + i*m*k;
         cl_mem_ext b = net.workspace_gpu;
         cl_mem_ext c = l.weight_updates_gpu;
 
         im2col_gpu(l.delta_gpu.add(l.delta_gpu, i*l.outputs, l.outputs).mem, 0, l.out_c, l.out_h, l.out_w,
                    l.size, l.stride, l.pad, b.mem);
 
-        gemm_gpu(1,0,m,n,k,1,a,k,b,k,1,c,n);
+        gemm_offset_gpu(1,0,m,n,k,1,a,i*m*k,k,b,0,k,1,c,0,n);
 
         if(net.delta_gpu.mem){
             int m = l.c;
             int n = l.h*l.w;
             int k = l.size*l.size*l.n;
 
-            cl_mem_ext ab = l.weights_gpu;
-            cl_mem_ext bc = net.workspace_gpu;
-            cl_mem_ext cd = net.delta_gpu.add(net.delta_gpu, i*n*m, n*m);
+            cl_mem_ext a = l.weights_gpu;
+            cl_mem_ext b = net.workspace_gpu;
+            cl_mem_ext c = net.delta_gpu; // + i*n*m;
 
-            gemm_gpu(0,0,m,n,k,1,ab,k,bc,n,1,cd,n);
+            gemm_offset_gpu(0,0,m,n,k,1,a,0,k,b,0,n,1,c,i*n*m,n);
         }
     }
 }

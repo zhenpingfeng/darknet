@@ -68,6 +68,9 @@ void train_yolo(char *cfgfile, char *weightfile)
             save_weights(net, buff);
         }
         free_data(train);
+#ifdef BENCHMARK
+        break;
+#endif
     }
     char buff[256];
     sprintf(buff, "%s/%s_final.weights", backup_directory, base);

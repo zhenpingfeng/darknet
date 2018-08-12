@@ -25,7 +25,7 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
 
     l.forward = forward_softmax_layer;
     l.backward = backward_softmax_layer;
-    #ifdef GPU
+#ifdef GPU
     if (gpu_index >= 0) {
         l.forward_gpu = forward_softmax_layer_gpu;
         l.backward_gpu = backward_softmax_layer_gpu;
@@ -33,7 +33,7 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
         l.loss_gpu = opencl_make_array(l.loss, inputs * batch);
         l.delta_gpu = opencl_make_array(l.delta, inputs * batch);
     }
-    #endif
+#endif
     return l;
 }
 

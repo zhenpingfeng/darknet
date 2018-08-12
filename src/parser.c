@@ -56,31 +56,31 @@ LAYER_TYPE string_to_layer_type(char * type)
     if (strcmp(type, "[iseg]")==0) return ISEG;
     if (strcmp(type, "[local]")==0) return LOCAL;
     if (strcmp(type, "[conv]")==0
-            || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
+        || strcmp(type, "[convolutional]")==0) return CONVOLUTIONAL;
     if (strcmp(type, "[deconv]")==0
-            || strcmp(type, "[deconvolutional]")==0) return DECONVOLUTIONAL;
+        || strcmp(type, "[deconvolutional]")==0) return DECONVOLUTIONAL;
     if (strcmp(type, "[activation]")==0) return ACTIVE;
     if (strcmp(type, "[logistic]")==0) return LOGXENT;
     if (strcmp(type, "[l2norm]")==0) return L2NORM;
     if (strcmp(type, "[net]")==0
-            || strcmp(type, "[network]")==0) return NETWORK;
+        || strcmp(type, "[network]")==0) return NETWORK;
     if (strcmp(type, "[crnn]")==0) return CRNN;
     if (strcmp(type, "[gru]")==0) return GRU;
     if (strcmp(type, "[lstm]") == 0) return LSTM;
     if (strcmp(type, "[rnn]")==0) return RNN;
     if (strcmp(type, "[conn]")==0
-            || strcmp(type, "[connected]")==0) return CONNECTED;
+        || strcmp(type, "[connected]")==0) return CONNECTED;
     if (strcmp(type, "[max]")==0
-            || strcmp(type, "[maxpool]")==0) return MAXPOOL;
+        || strcmp(type, "[maxpool]")==0) return MAXPOOL;
     if (strcmp(type, "[reorg]")==0) return REORG;
     if (strcmp(type, "[avg]")==0
-            || strcmp(type, "[avgpool]")==0) return AVGPOOL;
+        || strcmp(type, "[avgpool]")==0) return AVGPOOL;
     if (strcmp(type, "[dropout]")==0) return DROPOUT;
     if (strcmp(type, "[lrn]")==0
-            || strcmp(type, "[normalization]")==0) return NORMALIZATION;
+        || strcmp(type, "[normalization]")==0) return NORMALIZATION;
     if (strcmp(type, "[batchnorm]")==0) return BATCHNORM;
     if (strcmp(type, "[soft]")==0
-            || strcmp(type, "[softmax]")==0) return SOFTMAX;
+        || strcmp(type, "[softmax]")==0) return SOFTMAX;
     if (strcmp(type, "[route]")==0) return ROUTE;
     if (strcmp(type, "[upsample]")==0) return UPSAMPLE;
     return BLANK;
@@ -868,11 +868,13 @@ network *parse_network_cfg(char *filename)
     net->truths = out.outputs;
     if(net->layers[net->n-1].truths) net->truths = net->layers[net->n-1].truths;
     net->output = out.output;
+    //net->output = calloc(net->outputs*net->batch, sizeof(float));
     net->input = calloc(net->inputs*net->batch, sizeof(float));
     net->truth = calloc(net->truths*net->batch, sizeof(float));
 #ifdef GPU
     if (gpu_index >= 0) {
         net->output_gpu = out.output_gpu;
+        //net->output_gpu = opencl_make_array(net->output, net->outputs * net->batch);
         net->input_gpu = opencl_make_array(net->input, net->inputs * net->batch);
         net->truth_gpu = opencl_make_array(net->truth, net->truths * net->batch);
     }
@@ -1012,7 +1014,7 @@ void save_connected_weights(layer l, FILE *fp)
 void save_weights_upto(network *net, char *filename, int cutoff)
 {
 #ifdef GPU
-    if(net->gpu_index >= 0){
+    if(gpu_index >= 0){
         opencl_set_device(net->gpu_index);
     }
 #endif
@@ -1223,7 +1225,7 @@ void load_convolutional_weights(layer l, FILE *fp)
 void load_weights_upto(network *net, char *filename, int start, int cutoff)
 {
 #ifdef GPU
-    if(net->gpu_index >= 0){
+    if(gpu_index >= 0){
         opencl_set_device(net->gpu_index);
     }
 #endif
@@ -1314,4 +1316,3 @@ void load_weights(network *net, char *filename)
 {
     load_weights_upto(net, filename, 0, net->n);
 }
-

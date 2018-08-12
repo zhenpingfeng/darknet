@@ -9,7 +9,9 @@ option(DARKNET_CPU "Enable cpu support" OFF)
 option(DARKNET_OPENCV "Enable OpenCV support" ON)
 option(DARKNET_GPU "Enable OpenCL support" ON)
 option(DARKNET_GPU_FAST "Enable OpenCL fast kernels support" ON)
+option(DARKNET_GPU_MULTI "Enable OpenCL Multi-GPU support" OFF) # it is still experimental
 option(DARKNET_RPI "Enable Raspberry PI support" OFF)
+option(DARKNET_BENCHMARK "Some Benchmark Stats" OFF)
 option(DARKNET_TESTING "Build the unit tests" OFF)
 option(DARKNET_DEBUG "Enable debug mode" OFF)
 option(DARKNET_STATIC "Build static library" ON)
@@ -71,6 +73,16 @@ endif()
 # Fast Training
 if (DARKNET_GPU_FAST)
 	list (APPEND DARKNET_DEFINITIONS GPU_FAST)
+endif()
+
+# Multi-GPU Training
+if (DARKNET_GPU_MULTI)
+	list (APPEND DARKNET_DEFINITIONS GPU_MULTI)
+endif()
+
+# Benchmark Stats
+if (DARKNET_BENCHMARK)
+	list (APPEND DARKNET_DEFINITIONS BENCHMARK)
 endif()
 
 # Find Catch

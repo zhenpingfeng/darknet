@@ -201,7 +201,7 @@ cl_mem_ext random_matrix_gpu(int rows, int cols)
     return opencl_make_array(m, rows*cols);
 }
 
-#ifndef RPI
+#if !defined(GPU_MULTI) && !defined(RPI)
 void gemm_offset_gpu(int TA, int TB, int M, int N, int K,
               float ALPHA,
               cl_mem_ext A_gpu, int offset_A, int lda,

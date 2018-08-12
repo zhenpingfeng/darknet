@@ -505,8 +505,8 @@ void opencl_load_buffer(const char *buffer, const size_t size, cl_program *outpu
             prog[0],
             opencl_device_ct_t,
             opencl_devices,
-            "-cl-denorms-are-zero "
-            "-cl-fp32-correctly-rounded-divide-sqrt "
+          //"-cl-denorms-are-zero "
+          //"-cl-fp32-correctly-rounded-divide-sqrt "
             "-cl-std=CL1.2 "
             "-Werror "
             ,
@@ -528,8 +528,9 @@ void opencl_load_buffer(const char *buffer, const size_t size, cl_program *outpu
 
     *output =
             clLinkProgram(opencl_context, opencl_device_ct_t, opencl_devices,
-                    "-cl-denorms-are-zero "
-                    "-cl-kernel-arg-info", 1, prog, NULL, NULL, &clErr);
+                  //"-cl-denorms-are-zero "
+                  //"-cl-kernel-arg-info"
+                    "", 1, prog, NULL, NULL, &clErr);
 
     if (clErr != CL_SUCCESS)
     {
@@ -754,8 +755,21 @@ void opencl_kernel(cl_kernel kernel, const dim2 globalItemSize, const int argc, 
     globalItems[0] = globalItemSize.x;
     globalItems[1] = globalItemSize.y;
 
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     clErr = clEnqueueNDRangeKernel(opencl_queues[opencl_device_id_t], kernel, 2,
             globalOffser, globalItems, NULL, 0, NULL, NULL);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    const size_t bufferSize = 2048;
+    char *kernelName = (char*) calloc(bufferSize, sizeof(char));
+    clGetKernelInfo(kernel, CL_KERNEL_FUNCTION_NAME, bufferSize, kernelName, NULL);
+    printf("%s\t%d\n", kernelName, (int)time_taken);
+    free(kernelName);
+#endif
 
     // TODO: MAYBE? :D
     // clFinish(opencl_queues[opencl_device_id_t]);
@@ -809,6 +823,7 @@ float opencl_mag_array(cl_mem_ext x_gpu, size_t n)
 {
     float *temp = (float*) calloc(n, sizeof(float));
     opencl_pull_array(x_gpu, temp, n);
+
     float m = mag_array(temp, n);
 
     if(temp) free(temp);
@@ -856,8 +871,9 @@ cl_mem_ext opencl_make_array(float *x, size_t n)
     buf.add = add;
     buf.rem = rem;
 
-    if (x)
-        opencl_push_array(buf, x, n);
+    // booo!
+    //if (x)
+    //    opencl_push_array(buf, x, n);
 
     return buf;
 }
@@ -889,22 +905,32 @@ cl_mem_ext opencl_make_int_array(int *x, size_t n)
     buf.add = add;
     buf.rem = rem;
 
-    if (x)
-        opencl_push_int_array(buf, x, n);
+    // booo!
+    //if (x)
+    //    opencl_push_int_array(buf, x, n);
 
     return buf;
 }
 
 void opencl_push_int_array(cl_mem_ext x_gpu, int *x, size_t n)
 {
-    assert(x_gpu.ptr == (void*) x);
+    if (ngpusg == 1) assert(x_gpu.ptr == (void*) x);
 
-    assert(n != 0 && x_gpu.len - x_gpu.off == n);
+    if (ngpusg == 1) assert(n != 0 && x_gpu.len - x_gpu.off == n);
 
-    x_gpu.ptr = x;
+    //x_gpu.ptr = x;
 
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     cl_int clErr = clEnqueueWriteBuffer(opencl_queues[opencl_device_id_t], x_gpu.mem, CL_TRUE, 0,
                                         (n - x_gpu.off) * x_gpu.obs, x_gpu.ptr, 0, NULL, NULL);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%x\t%d\n", "opencl_push_int_array", x_gpu.ptr, (int)time_taken);
+#endif
 
     if (clErr != CL_SUCCESS)
         printf("could not push array to device. error: %s\n", clCheckError(clErr));
@@ -912,14 +938,23 @@ void opencl_push_int_array(cl_mem_ext x_gpu, int *x, size_t n)
 
 void opencl_pull_int_array(cl_mem_ext x_gpu, int *x, size_t n)
 {
-    assert(x_gpu.ptr == (void*) x);
+    if (ngpusg == 1) assert(x_gpu.ptr == (void*) x);
 
-    assert(n != 0 && x_gpu.len - x_gpu.off == n);
+    if (ngpusg == 1) assert(n != 0 && x_gpu.len - x_gpu.off == n);
 
-    x_gpu.ptr = x;
+    //x_gpu.ptr = x;
 
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     cl_int clErr = clEnqueueReadBuffer(opencl_queues[opencl_device_id_t], x_gpu.mem, CL_TRUE, 0,
                                        (n - x_gpu.off) * x_gpu.obs, x_gpu.ptr, 0, NULL, NULL);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%x\t%d\n", "opencl_pull_int_array", x_gpu.ptr, (int)time_taken);
+#endif
 
     if (clErr != CL_SUCCESS)
         printf("could not pull array to device. error: %s\n", clCheckError(clErr));
@@ -927,14 +962,23 @@ void opencl_pull_int_array(cl_mem_ext x_gpu, int *x, size_t n)
 
 void opencl_push_array(cl_mem_ext x_gpu, float *x, size_t n)
 {
-    assert(x_gpu.ptr == (void*) x);
+    if (ngpusg == 1) assert(x_gpu.ptr == (void*) x);
 
-    assert(n != 0 && x_gpu.len  - x_gpu.off == n);
+    if (ngpusg == 1) assert(n != 0 && x_gpu.len  - x_gpu.off == n);
 
-    x_gpu.ptr = x;
+    //x_gpu.ptr = x;
 
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     cl_int clErr = clEnqueueWriteBuffer(opencl_queues[opencl_device_id_t], x_gpu.mem, CL_TRUE, 0,
                                         (n - x_gpu.off) * x_gpu.obs, x_gpu.ptr, 0, NULL, NULL);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%x\t%d\n", "opencl_push_array", x_gpu.ptr, (int)time_taken);
+#endif
 
     if (clErr != CL_SUCCESS)
         printf("could not push array to device. error: %s\n", clCheckError(clErr));
@@ -942,14 +986,23 @@ void opencl_push_array(cl_mem_ext x_gpu, float *x, size_t n)
 
 void opencl_pull_array(cl_mem_ext x_gpu, float *x, size_t n)
 {
-    assert(x_gpu.ptr == (void*) x);
+    if (ngpusg == 1) assert(x_gpu.ptr == (void*) x);
 
-    assert(n != 0 && x_gpu.len  - x_gpu.off == n);
+    if (ngpusg == 1) assert(n != 0 && x_gpu.len  - x_gpu.off == n);
 
-    x_gpu.ptr = x;
+    //x_gpu.ptr = x;
 
+#ifdef BENCHMARK
+    clock_t t;
+    t = clock();
+#endif
     cl_int clErr = clEnqueueReadBuffer(opencl_queues[opencl_device_id_t], x_gpu.mem, CL_TRUE, 0,
                                        (n - x_gpu.off) * x_gpu.obs, x_gpu.ptr, 0, NULL, NULL);
+#ifdef BENCHMARK
+    t = clock() - t;
+    double time_taken = ((double)t);
+    printf("%s\t%x\t%d\n", "opencl_pull_array", x_gpu.ptr, (int)time_taken);
+#endif
 
     if (clErr != CL_SUCCESS)
         printf("could not pull array to device. error: %s\n", clCheckError(clErr));

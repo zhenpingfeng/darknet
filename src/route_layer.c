@@ -27,14 +27,14 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
 
     l.forward = forward_route_layer;
     l.backward = backward_route_layer;
-    #ifdef GPU
+#ifdef GPU
     if (gpu_index >= 0) {
         l.forward_gpu = forward_route_layer_gpu;
         l.backward_gpu = backward_route_layer_gpu;
         l.delta_gpu = opencl_make_array(l.delta, outputs * batch);
         l.output_gpu = opencl_make_array(l.output, outputs * batch);
     }
-    #endif
+#endif
     return l;
 }
 

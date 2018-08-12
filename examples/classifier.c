@@ -131,10 +131,15 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 
         float loss = 0;
 #ifdef GPU
-        if(ngpus == 1){
+        if (gpu_index >= 0) {
+            if (ngpus == 1) {
+                loss = train_network(net, train);
+            } else {
+                loss = train_networks(nets, ngpus, train, 4, gpus, ngpus);
+            }
+        }
+        else {
             loss = train_network(net, train);
-        } else {
-            loss = train_networks(nets, ngpus, train, 4, gpus, ngpus);
         }
 #else
         loss = train_network(net, train);
@@ -154,6 +159,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             sprintf(buff, "%s/%s.backup",backup_directory,base);
             save_weights(net, buff);
         }
+#ifdef BENCHMARK
+        break;
+#endif
     }
     char buff[256];
     sprintf(buff, "%s/%s.weights", backup_directory, base);

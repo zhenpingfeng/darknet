@@ -85,15 +85,16 @@ void forward_iseg_layer(const layer l, network net)
     double time = what_time_is_it_now();
     int i,b,j,k;
     int ids = l.extra;
-    memcpy(l.output, net.input, l.outputs*l.batch*sizeof(float));
     memset(l.delta, 0, l.outputs * l.batch * sizeof(float));
 
-#ifndef GPU
-    for (b = 0; b < l.batch; ++b){
-         int index = b*l.outputs;
-         activate_array(l.output + index, l.classes*l.w*l.h, LOGISTIC);
-     }
-#endif
+    if (gpu_index < 0) {
+        memcpy(l.output, net.input, l.outputs * l.batch * sizeof(float));
+
+        for (b = 0; b < l.batch; ++b) {
+            int index = b * l.outputs;
+            activate_array(l.output + index, l.classes * l.w * l.h, LOGISTIC);
+        }
+    }
 
     for (b = 0; b < l.batch; ++b){
         // a priori, each pixel has no class
@@ -205,8 +206,15 @@ void forward_iseg_layer_gpu(const layer l, network net)
         activate_array_offset_gpu(l.output_gpu, b*l.outputs, l.classes*l.w*l.h, LOGISTIC);
         //if(l.extra) activate_array_offset_gpu(l.output_gpu, b*l.outputs + l.classes*l.w*l.h, l.extra*l.w*l.h, LOGISTIC);
     }
+    if(!net.train || l.onlyforward){
+        opencl_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+        return;
+    }
 
-    opencl_pull_array(l.output_gpu, net.input, l.batch*l.inputs);
+    //opencl_pull_array(l.output_gpu, net.input, l.batch*l.inputs);
+    opencl_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+    memcpy(net.input, l.output, l.batch*l.outputs*sizeof(float));
+
     forward_iseg_layer(l, net);
     opencl_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
 }

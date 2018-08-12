@@ -24,7 +24,7 @@ layer make_logistic_layer(int batch, int inputs)
 
     l.forward = forward_logistic_layer;
     l.backward = backward_logistic_layer;
-    #ifdef GPU
+#ifdef GPU
     if (gpu_index >= 0) {
         l.forward_gpu = forward_logistic_layer_gpu;
         l.backward_gpu = backward_logistic_layer_gpu;
@@ -32,7 +32,7 @@ layer make_logistic_layer(int batch, int inputs)
         l.loss_gpu = opencl_make_array(l.loss, inputs * batch);
         l.delta_gpu = opencl_make_array(l.delta, inputs * batch);
     }
-    #endif
+#endif
     return l;
 }
 

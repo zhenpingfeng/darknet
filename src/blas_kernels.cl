@@ -52,7 +52,7 @@ void scale_bias(float *output, float *biases, int batch, int n, int size)
 */
 __kernel void scale_bias_kernel(int N, __global float *output, __global float *biases, int batch, int n, int size)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
 
     if (id >= N) return;
 
@@ -80,10 +80,9 @@ void backward_scale_cpu(float *x_norm, float *delta, int batch, int n, int size,
     }
 }
 */
-/*
 __kernel void backward_scale_kernel(int N, __global float *x_norm, __global float *delta, int batch, int n, int size, __global float *scale_updates)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= N) return;
 
     int f = (id / (batch*size));
@@ -93,7 +92,7 @@ __kernel void backward_scale_kernel(int N, __global float *x_norm, __global floa
     int index = i + size*(f + n*b);
     scale_updates[f] += delta[index] * x_norm[index];
 }
-*/
+/*
 __kernel void backward_scale_kernel(int threads, __global float *x_norm, __global float *delta, int batch, int n, int size, __global float *scale_updates)
 {
     int i = get_global_id(1);
@@ -106,6 +105,8 @@ __kernel void backward_scale_kernel(int threads, __global float *x_norm, __globa
         }
     }
 }
+*/
+
 
 /*
 void add_bias(float *output, float *biases, int batch, int n, int size)
@@ -122,7 +123,7 @@ void add_bias(float *output, float *biases, int batch, int n, int size)
 */
 __kernel void add_bias_kernel(int N, __global float *output, __global float *biases, int batch, int n, int size)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
 
     if (id >= N) return;
 
@@ -152,10 +153,9 @@ void backward_bias(float *bias_updates, float *delta, int batch, int n, int size
     }
 }
 */
-/*
 __kernel void backward_bias_kernel(int N, __global float *bias_updates, __global float *delta, int batch, int n, int size)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
 
     if (id >= N) return;
 
@@ -166,7 +166,7 @@ __kernel void backward_bias_kernel(int N, __global float *bias_updates, __global
     int index = j + i*size + b*n*size;
     bias_updates[i] += delta[index];
 }
-*/
+/*
 __kernel void backward_bias_kernel(int threads, __global float *bias_updates, __global float *delta, int batch, int n, int size)
 {
     int i = get_global_id(1);
@@ -179,6 +179,7 @@ __kernel void backward_bias_kernel(int threads, __global float *bias_updates, __
         }
     }
 }
+*/
 
 
 /*
@@ -202,7 +203,7 @@ __kernel void  mean_kernel(int N, __global float *x, int batch, int filters, int
 {
     float scale = 1.f/(batch * spatial);
 
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= N) return;
 
     int i = id;
@@ -239,7 +240,7 @@ __kernel void variance_kernel(int N, __global float *x, __global float *mean, in
 {
     float scale = 1.f/(batch * spatial - 1);
 
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= N) return;
 
     int i = id;
@@ -326,7 +327,7 @@ __kernel void variance_delta_kernel(int N, __global float *x, __global float *de
 __kernel void accumulate_kernel(__global float *x, int n, int groups, __global float *sum)
 {
     int k;
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if (i >= groups) return;
     sum[i] = 0;
     for(k = 0; k < n; ++k){
@@ -413,7 +414,7 @@ __kernel void fast_variance_delta_kernel(__const int threads, __global float *x,
 
 __kernel void adam_kernel(int N, __global float *x, __global float *m, __global float *v, float B1, float B2, float rate, float eps, int t)
 {
-    int index = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int index = get_global_id(0);
     if (index >= N) return;
 
     x[index] = x[index] + (rate * sqrt(1.f-pow(B2, t)) / (1.f-pow(B1, t)) * m[index] / (sqrt((v[index] + eps))));
@@ -436,7 +437,7 @@ void normalize_cpu(float *x, float *mean, float *variance, int batch, int filter
 */
 __kernel void normalize_kernel(int N, __global float *x, __global float *mean, __global float *variance, int batch, int filters, int spatial)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= N) return;
 
     int b = (id / (filters*spatial));
@@ -444,7 +445,7 @@ __kernel void normalize_kernel(int N, __global float *x, __global float *mean, _
     int i = (id % spatial);
 
     int index = b*filters*spatial + f*spatial + i;
-    x[index] = (x[index] - mean[f])/(sqrt(variance[f] + .00001f));
+    x[index] = (x[index] - mean[f])/(sqrt(variance[f] + .000001f));
 }
 
 
@@ -464,7 +465,7 @@ void normalize_delta_cpu(float *x, float *mean, float *variance, float *mean_del
 */
 __kernel void normalize_delta_kernel(int N, __global float *x, __global float *mean, __global float *variance, __global float *mean_delta, __global float *variance_delta, int batch, int filters, int spatial, __global float *delta)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= N) return;
 
     int j = (id / (filters*spatial));
@@ -499,7 +500,7 @@ void l2normalize_cpu(float *x, float *dx, int batch, int filters, int spatial)
 */
 __kernel void l2norm_kernel(int N, __global float *x, __global float *dx, int batch, int filters, int spatial)
 {
-    int index = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int index = get_global_id(0);
     if (index >= N) return;
     int b = index / spatial;
     int i = index % spatial;
@@ -521,7 +522,7 @@ __kernel void l2norm_kernel(int N, __global float *x, __global float *dx, int ba
 
 __kernel void reorg_kernel(int N, __global float *x, int w, int h, int c, int batch, int stride, int forward, __global float *out)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i >= N) return;
     int in_index = i;
     int in_w = i%w;
@@ -548,35 +549,35 @@ __kernel void reorg_kernel(int N, __global float *x, int w, int h, int c, int ba
 
 __kernel void axpy_kernel(int N, float ALPHA, __global float *X, int OFFX, int INCX,  __global float *Y, int OFFY, int INCY)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) Y[i*INCY+OFFY] += ALPHA*X[i*INCX+OFFX];
 }
 
 
 __kernel void pow_kernel(int N, float ALPHA, __global float *X, int OFFX, int INCX, __global float *Y, int OFFY, int INCY)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) Y[i*INCY + OFFY] = pow(X[i*INCX + OFFX], ALPHA);
 }
 
 
 __kernel void const_kernel(int N, float ALPHA, __global float *X, int OFFX, int INCX)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) X[i*INCX + OFFX] = ALPHA;
 }
 
 
 __kernel void constrain_kernel(int N, float ALPHA, __global float *X, int INCX)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) X[i*INCX] = min(ALPHA, max(-ALPHA, X[i*INCX]));
 }
 
 
 __kernel void supp_kernel(int N, float ALPHA, __global float *X, int INCX)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) {
         if((X[i*INCX] * X[i*INCX]) < (ALPHA * ALPHA)) X[i*INCX] = 0;
     }
@@ -585,49 +586,49 @@ __kernel void supp_kernel(int N, float ALPHA, __global float *X, int INCX)
 
 __kernel void add_kernel(int N, float ALPHA, __global float *X, int INCX)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) X[i*INCX] += ALPHA;
 }
 
 
 __kernel void scal_kernel(int N, float ALPHA, __global float *X, int INCX)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) X[i*INCX] *= ALPHA;
 }
 
 
 __kernel void fill_kernel(int N, float ALPHA, __global float *X, int OFFX, int INCX)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) X[i*INCX + OFFX] = ALPHA;
 }
 
 
 __kernel void mask_kernel(int n,  __global float *x, float mask_num, __global float *mask, float val)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n && mask[i] == mask_num) x[i] = val;
 }
 
 
 __kernel void copy_kernel(int N,  __global float *X, int OFFX, int INCX, __global float *Y, int OFFY, int INCY)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) Y[i*INCY + OFFY] = X[i*INCX + OFFX];
 }
 
 
 __kernel void mul_kernel(int N, __global float *X, int INCX, __global float *Y, int INCY)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < N) Y[i*INCY] *= X[i*INCX];
 }
 
 
 __kernel void flatten_kernel(int N, __global float *x, int spatial, int layers, int batch, int forward, __global float *out)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i >= N) return;
     int in_s = i%spatial;
     i = i/spatial;
@@ -645,7 +646,7 @@ __kernel void flatten_kernel(int N, __global float *x, int spatial, int layers, 
 
 __kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int sample, int batch, int w1, int h1, int c1, __global float *add, int w2, int h2, int c2, float s1, float s2, __global float *out)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= size) return;
     int i = id % minw;
     id /= minw;
@@ -664,7 +665,7 @@ __kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride
 
 __kernel void smooth_l1_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         float diff = truth[i] - pred[i];
         float abs_val = fabs(diff);
@@ -682,7 +683,7 @@ __kernel void smooth_l1_kernel(int n, __global float *pred, __global float *trut
 
 __kernel void softmax_x_ent_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n) {
         float t = truth[i];
         float p = pred[i];
@@ -694,7 +695,7 @@ __kernel void softmax_x_ent_kernel(int n, __global float *pred, __global float *
 
 __kernel void logistic_x_ent_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         float t = truth[i];
         float p = pred[i];
@@ -708,7 +709,7 @@ __kernel void logistic_x_ent_kernel(int n, __global float *pred, __global float 
 
 __kernel void l2_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         float t = truth[i];
         float p = pred[i];
@@ -721,7 +722,7 @@ __kernel void l2_kernel(int n, __global float *pred, __global float *truth, __gl
 
 __kernel void l1_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         float diff = truth[i] - pred[i];
         error[i] = fabs(diff);
@@ -732,7 +733,7 @@ __kernel void l1_kernel(int n, __global float *pred, __global float *truth, __gl
 
 __kernel void wgan_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         error[i] = (truth[i]!=0) ? -pred[i] : pred[i];
         delta[i] = (truth[i] > 0) ? 1 : -1;
@@ -742,7 +743,7 @@ __kernel void wgan_kernel(int n, __global float *pred, __global float *truth, __
 
 __kernel void weighted_sum_kernel(int n, __global float *a, __global float *b, __global float *s, __global float *c)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         c[i] = s[i]*a[i] + (1-s[i])*(b ? b[i] : 0);
     }
@@ -751,7 +752,7 @@ __kernel void weighted_sum_kernel(int n, __global float *a, __global float *b, _
 
 __kernel void weighted_delta_kernel(int n, __global float *a, __global float *b, __global float *s, __global float *da, __global float *db, __global float *ds, __global float *dc)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         if(da) da[i] += dc[i] * s[i];
         db[i] += dc[i] * (1-s[i]);
@@ -762,7 +763,7 @@ __kernel void weighted_delta_kernel(int n, __global float *a, __global float *b,
 
 __kernel void mult_add_into_kernel(int n, __global float *a, __global float *b, __global float *c)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n){
         c[i] += a[i]*b[i];
     }
@@ -771,7 +772,7 @@ __kernel void mult_add_into_kernel(int n, __global float *a, __global float *b, 
 
 __kernel void deinter_kernel(int NX, __global float *X, int NY, __global float *Y, int B, __global float *OUT)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < (NX+NY)*B){
         int b = i / (NX+NY);
         int j = i % (NX+NY);
@@ -786,7 +787,7 @@ __kernel void deinter_kernel(int NX, __global float *X, int NY, __global float *
 
 __kernel void inter_kernel(int NX, __global float *X, int NY, __global float *Y, int B, __global float *OUT)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < (NX+NY)*B){
         int b = i / (NX+NY);
         int j = i % (NX+NY);
@@ -821,7 +822,7 @@ __kernel void softmax_device(__global float *input, int n, float temp, int strid
 
 __kernel void softmax_kernel(__global float *input, int offset, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, __global float *output)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= batch*groups) return;
     int b = id / groups;
     int g = id % groups;
@@ -831,7 +832,7 @@ __kernel void softmax_kernel(__global float *input, int offset, int n, int batch
 
 __kernel void softmax_tree_kernel(__global float *input, int offset, int index, int spatial, int batch, int stride, float temp, __global float *output, int groups, __global float *group_size, __global float *group_offset)
 {
-    int id = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int id = get_global_id(0);
     if (id >= spatial*batch*groups) return;
     int s = id % spatial;
     id = id / spatial;
@@ -845,14 +846,14 @@ __kernel void softmax_tree_kernel(__global float *input, int offset, int index, 
 
 __kernel void scale_mask_kernel(int n, __global float *x, float mask_num, __global float *mask, float scale)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i < n && mask[i] == mask_num) x[i] *= scale;
 }
 
 
 __kernel void dot_kernel(__global float *output, float scale, int batch, int n, int size, __global float *delta)
 {
-    int index = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int index = get_global_id(0);
 
     int f1 = index / n;
     int f2 = index % n;
@@ -894,7 +895,7 @@ inline void atomicAdd_f(__global float* address, float value)
 
 __kernel void upsample_kernel(int N, __global float *x, int w, int h, int c, int batch, int stride, int forward, float scale, __global float *out)
 {
-    int i = (get_group_id(0) + get_group_id(1)*get_num_groups(0)) * get_local_size(0) + get_local_id(0);
+    int i = get_global_id(0);
     if(i >= N) return;
     int out_index = i;
     int out_w = i%(w*stride);

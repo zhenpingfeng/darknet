@@ -312,13 +312,11 @@ void scale_bias_gpu(cl_mem_ext output, cl_mem_ext biases, int batch, int n, int 
 
 void backward_scale_gpu(cl_mem_ext x_norm, cl_mem_ext delta, int batch, int n, int size, cl_mem_ext scale_updates)
 {
-    int N = batch;
-
-    int threads = ((MIN(cl_native_max_group_size_s[opencl_device_id_t], 256) - 1) / N) + 1;
+    int N = batch * n * size;
     dim2 dimGrid;
-    dimGrid = dim2_create(threads, N);
+    dimGrid = dim2_create(N, 1);
 
-    opencl_kernel(opencl_backward_scale_kernel[opencl_device_id_t], dimGrid, 14, &threads, sizeof(cl_int), &x_norm.mem, sizeof(cl_mem), &delta.mem, sizeof(cl_mem), &batch, sizeof(cl_int), &n, sizeof(cl_int), &size, sizeof(cl_int), &scale_updates.mem, sizeof(cl_mem));
+    opencl_kernel(opencl_backward_scale_kernel[opencl_device_id_t], dimGrid, 14, &N, sizeof(cl_int), &x_norm.mem, sizeof(cl_mem), &delta.mem, sizeof(cl_mem), &batch, sizeof(cl_int), &n, sizeof(cl_int), &size, sizeof(cl_int), &scale_updates.mem, sizeof(cl_mem));
 }
 
 
@@ -334,13 +332,11 @@ void add_bias_gpu(cl_mem_ext output, cl_mem_ext biases, int batch, int n, int si
 
 void backward_bias_gpu(cl_mem_ext bias_updates, cl_mem_ext delta, int batch, int n, int size)
 {
-    int N = batch;
-
-    int threads = ((MIN(cl_native_max_group_size_s[opencl_device_id_t], 256) - 1) / N) + 1;
+    int N = batch * n * size;
     dim2 dimGrid;
-    dimGrid = dim2_create(threads, N);
+    dimGrid = dim2_create(N, 1);
 
-    opencl_kernel(opencl_backward_bias_kernel[opencl_device_id_t], dimGrid, 12, &threads, sizeof(cl_int), &bias_updates.mem, sizeof(cl_mem), &delta.mem, sizeof(cl_mem), &batch, sizeof(cl_int), &n, sizeof(cl_int), &size, sizeof(cl_int));
+    opencl_kernel(opencl_backward_bias_kernel[opencl_device_id_t], dimGrid, 12, &N, sizeof(cl_int), &bias_updates.mem, sizeof(cl_mem), &delta.mem, sizeof(cl_mem), &batch, sizeof(cl_int), &n, sizeof(cl_int), &size, sizeof(cl_int));
 }
 
 
@@ -739,8 +735,8 @@ void softmax_offset_tree(cl_mem_ext input, int offset, int spatial, int batch, i
                   &tree_groups_offset.mem, sizeof(cl_mem)
     );
 
-    opencl_free(tree_groups_size);
-    opencl_free(tree_groups_offset);
+    opencl_free_gpu_only(tree_groups_size);
+    opencl_free_gpu_only(tree_groups_offset);
 }
 
 void softmax_offset_gpu(cl_mem_ext input, int offset, int n, int batch, int batch_offset, int groups, int group_offset, int stride, float temp, cl_mem_ext output)
@@ -835,7 +831,8 @@ void upsample_gpu(cl_mem_ext in, int w, int h, int c, int batch, int stride, int
                   &scale, sizeof(cl_float),
                   &out.mem, sizeof(cl_mem));
 }
-#ifdef RPI
+
+#if defined(GPU_MULTI) || defined(RPI)
 void gemm_offset_gpu(
         int TA, int TB,
         int M, int N, int K,

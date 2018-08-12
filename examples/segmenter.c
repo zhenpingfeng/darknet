@@ -84,13 +84,20 @@ void train_segmenter(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
 
         float loss = 0;
 #ifdef GPU
-        if(ngpus == 1){
+        if (gpu_index >= 0) {
+            if (ngpus == 1) {
+                loss = train_network(net, train);
+            } else {
+                loss = train_networks(nets, ngpus, train, 4, gpus, ngpus);
+            }
+        }
+        else {
             loss = train_network(net, train);
-        } else {
-            loss = train_networks(nets, ngpus, train, 4, gpus, ngpus);
         }
 #else
-        loss = train_network(net, train);
+        if (gpu_index < 0) {
+            loss = train_network(net, train);
+        }
 #endif
         if(display){
             image tr = float_to_image(net->w/div, net->h/div, 80, train.y.vals[net->batch*(net->subdivisions-1)]);

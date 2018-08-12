@@ -418,7 +418,7 @@ int main(int argc, char **argv)
     int ngpus;
     int *gpus = read_intlist(gpu_list, &ngpus, gpu_index);
 
-    if (ngpus == 1) {
+    if (ngpus == 1 || gpu_index < 0) {
         gpus[0] = gpu_index;
     }
 

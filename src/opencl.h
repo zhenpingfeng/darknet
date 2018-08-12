@@ -1,6 +1,10 @@
 #ifndef OPENCL_H
 #define OPENCL_H
 
+#ifdef RPI
+#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
+#endif
+
 #ifdef GPU
 #ifdef __APPLE__
 #include <OpenCL/cl.h>

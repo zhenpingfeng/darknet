@@ -23,7 +23,7 @@ layer make_l2norm_layer(int batch, int inputs)
 
     l.forward = forward_l2norm_layer;
     l.backward = backward_l2norm_layer;
-    #ifdef GPU
+#ifdef GPU
     if (gpu_index >= 0) {
         l.forward_gpu = forward_l2norm_layer_gpu;
         l.backward_gpu = backward_l2norm_layer_gpu;
@@ -31,7 +31,7 @@ layer make_l2norm_layer(int batch, int inputs)
         l.scales_gpu = opencl_make_array(l.output, inputs * batch);
         l.delta_gpu = opencl_make_array(l.delta, inputs * batch);
     }
-    #endif
+#endif
     return l;
 }
 

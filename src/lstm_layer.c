@@ -19,11 +19,13 @@ static void increment_layer(layer *l, int steps)
     l->x_norm += num;
 
 #ifdef GPU
-    // TODO: CHECK IT (4)
-    l->output_gpu.inc(l->output_gpu, num, l->outputs*l->batch);
-    l->delta_gpu.inc(l->delta_gpu, num, l->outputs*l->batch);
-    l->x_gpu.inc(l->x_gpu, num, l->outputs*l->batch);
-    l->x_norm_gpu.inc(l->x_norm_gpu, num, l->outputs*l->batch);
+    if (gpu_index >= 0) {
+        // TODO: CHECK IT (4)
+        l->output_gpu.inc(l->output_gpu, num, l->outputs * l->batch);
+        l->delta_gpu.inc(l->delta_gpu, num, l->outputs * l->batch);
+        l->x_gpu.inc(l->x_gpu, num, l->outputs * l->batch);
+        l->x_norm_gpu.inc(l->x_norm_gpu, num, l->outputs * l->batch);
+    }
 #endif
 }
 
@@ -103,28 +105,30 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
     l.dh_cpu =          calloc(batch*outputs, sizeof(float));
 
 #ifdef GPU
-    l.forward_gpu = forward_lstm_layer_gpu;
-    l.backward_gpu = backward_lstm_layer_gpu;
-    l.update_gpu = update_lstm_layer_gpu;
+    if (gpu_index >= 0) {
+        l.forward_gpu = forward_lstm_layer_gpu;
+        l.backward_gpu = backward_lstm_layer_gpu;
+        l.update_gpu = update_lstm_layer_gpu;
 
-    l.output_gpu = opencl_make_array(0, batch*outputs*steps);
-    l.delta_gpu = opencl_make_array(0, batch*l.outputs*steps);
+        l.output_gpu = opencl_make_array(0, batch * outputs * steps);
+        l.delta_gpu = opencl_make_array(0, batch * l.outputs * steps);
 
-    l.prev_state_gpu = opencl_make_array(0, batch*outputs);
-    l.prev_cell_gpu = opencl_make_array(0, batch*outputs);
-    l.cell_gpu = opencl_make_array(0, batch*outputs*steps);
+        l.prev_state_gpu = opencl_make_array(0, batch * outputs);
+        l.prev_cell_gpu = opencl_make_array(0, batch * outputs);
+        l.cell_gpu = opencl_make_array(0, batch * outputs * steps);
 
-    l.f_gpu = opencl_make_array(0, batch*outputs);
-    l.i_gpu = opencl_make_array(0, batch*outputs);
-    l.g_gpu = opencl_make_array(0, batch*outputs);
-    l.o_gpu = opencl_make_array(0, batch*outputs);
-    l.c_gpu = opencl_make_array(0, batch*outputs);
-    l.h_gpu = opencl_make_array(0, batch*outputs);
-    l.temp_gpu =  opencl_make_array(0, batch*outputs);
-    l.temp2_gpu = opencl_make_array(0, batch*outputs);
-    l.temp3_gpu = opencl_make_array(0, batch*outputs);
-    l.dc_gpu = opencl_make_array(0, batch*outputs);
-    l.dh_gpu = opencl_make_array(0, batch*outputs);
+        l.f_gpu = opencl_make_array(0, batch * outputs);
+        l.i_gpu = opencl_make_array(0, batch * outputs);
+        l.g_gpu = opencl_make_array(0, batch * outputs);
+        l.o_gpu = opencl_make_array(0, batch * outputs);
+        l.c_gpu = opencl_make_array(0, batch * outputs);
+        l.h_gpu = opencl_make_array(0, batch * outputs);
+        l.temp_gpu = opencl_make_array(0, batch * outputs);
+        l.temp2_gpu = opencl_make_array(0, batch * outputs);
+        l.temp3_gpu = opencl_make_array(0, batch * outputs);
+        l.dc_gpu = opencl_make_array(0, batch * outputs);
+        l.dh_gpu = opencl_make_array(0, batch * outputs);
+    }
 #endif
 
     return l;
