@@ -156,7 +156,8 @@ void predict_isegmenter(char *datafile, char *cfg, char *weights, char *filename
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image sized = letterbox_image(im, net->w, net->h);
+        int resize = im.w != net->w || im.h != net->h;
+        image sized = resize ? letterbox_image(im, net->w, net->h) : im;
 
         float *X = sized.data;
         time=clock();
@@ -168,7 +169,7 @@ void predict_isegmenter(char *datafile, char *cfg, char *weights, char *filename
         show_image(sized, "orig", 1);
         show_image(prmask, "pred", 0);
         free_image(im);
-        free_image(sized);
+        if (resize) free_image(sized);
         free_image(prmask);
         if (filename) break;
     }
@@ -201,7 +202,8 @@ void demo_isegmenter(char *datacfg, char *cfg, char *weights, int cam_index, con
         gettimeofday(&tval_before, NULL);
 
         image in = get_image_from_stream(cap);
-        image in_s = letterbox_image(in, net->w, net->h);
+        int resize = in.w != net->w || in.h != net->h;
+        image in_s = resize ? letterbox_image(in, net->w, net->h) : in;
 
         network_predict(net, in_s.data);
 
@@ -213,7 +215,7 @@ void demo_isegmenter(char *datacfg, char *cfg, char *weights, int cam_index, con
         image prmask = mask_to_rgb(pred);
         show_image(prmask, "Segmenter", 10);
 
-        free_image(in_s);
+        if (resize) free_image(in_s);
         free_image(in);
         free_image(prmask);
 

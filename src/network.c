@@ -593,10 +593,11 @@ void free_detections(detection *dets, int n)
 
 float *network_predict_image(network *net, image im)
 {
-    image imr = letterbox_image(im, net->w, net->h);
+    int resize = im.w != net->w || im.h != net->h;
+    image imr = resize ? letterbox_image(im, net->w, net->h) : im;
     set_batch_network(net, 1);
     float *p = network_predict(net, imr.data);
-    free_image(imr);
+    if(resize) free_image(imr);
     return p;
 }
 
@@ -741,7 +742,13 @@ void free_network(network *net)
     if (gpu_index >= 0) {
         if (net->input_gpu.mem) opencl_free(net->input_gpu);
         if (net->truth_gpu.mem) opencl_free(net->truth_gpu);
+        if (net->workspace_gpu.mem) opencl_free(net->workspace_gpu);
     }
+    else {
+        free(net->workspace);
+    }
+#else
+    free(net->workspace);
 #endif
     free(net);
 }

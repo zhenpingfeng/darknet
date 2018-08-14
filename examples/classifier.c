@@ -593,7 +593,8 @@ void predict_classifier(char *datacfg, char *cfgfile, char *weightfile, char *fi
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image r = letterbox_image(im, net->w, net->h);
+        int resize = im.w != net->w || im.h != net->h;
+        image r = resize ? letterbox_image(im, net->w, net->h) : im;
         //image r = resize_min(im, 320);
         //printf("%d %d\n", r.w, r.h);
         //resize_network(net, r.w, r.h);
@@ -675,7 +676,8 @@ void csv_classifier(char *datacfg, char *cfgfile, char *weightfile)
         double time = what_time_is_it_now();
         char *path = paths[i];
         image im = load_image_color(path, 0, 0);
-        image r = letterbox_image(im, net->w, net->h);
+        int resize = im.w != net->w || im.h != net->h;
+        image r = resize ? letterbox_image(im, net->w, net->h) : im;
         float *predictions = network_predict(net, r.data);
         if(net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
         top_k(predictions, net->outputs, top, indexes);
@@ -687,7 +689,7 @@ void csv_classifier(char *datacfg, char *cfgfile, char *weightfile)
         printf("\n");
 
         free_image(im);
-        free_image(r);
+        if (resize) free_image(r);
 
         fprintf(stderr, "%lf seconds, %d images, %d total\n", what_time_is_it_now() - time, i+1, m);
     }
@@ -1055,7 +1057,8 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 
         image in = get_image_from_stream(cap);
         //image in_s = resize_image(in, net->w, net->h);
-        image in_s = letterbox_image(in, net->w, net->h);
+        int resize = in.w != net->w || in.h != net->h;
+        image in_s = resize ? letterbox_image(in, net->w, net->h) : in;
 
         float *predictions = network_predict(net, in_s.data);
         if(net->hierarchy) hierarchy_predictions(predictions, net->outputs, net->hierarchy, 1, 1);
@@ -1083,7 +1086,7 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
         }
 
         show_image(in, base, 10);
-        free_image(in_s);
+        if (resize) free_image(in_s);
         free_image(in);
 
         cvWaitKey(10);

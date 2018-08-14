@@ -407,7 +407,8 @@ void predict_attention(char *datacfg, char *cfgfile, char *weightfile, char *fil
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image r = letterbox_image(im, net->w, net->h);
+        int resize = im.w != net->w || im.h != net->h;
+        image r = resize ? letterbox_image(im, net->w, net->h) : im;
         //resize_network(&net, r.w, r.h);
         //printf("%d %d\n", r.w, r.h);
 

@@ -224,7 +224,7 @@ image **load_alphabet()
 {
     int i, j;
     const int nsize = 8;
-    image **alphabets = calloc(nsize, sizeof(image));
+    image **alphabets = calloc(nsize, sizeof(image*));
     for(j = 0; j < nsize; ++j){
         alphabets[j] = calloc(128, sizeof(image));
         for(i = 32; i < 127; ++i){
@@ -593,6 +593,22 @@ int show_image(image p, const char *name, int ms)
 
 #ifdef OPENCV
 
+void image_into_ipl(image im, IplImage *dst)
+{
+    int x,y,k;
+    if(im.c == 3) rgbgr_image(im);
+
+    int step = dst->widthStep;
+
+    for(y = 0; y < im.h; ++y){
+        for(x = 0; x < im.w; ++x){
+            for(k= 0; k < im.c; ++k){
+                dst->imageData[y*step + x*im.c + k] = (unsigned char)(get_pixel(im,x,y,k)*255);
+            }
+        }
+    }
+}
+
 void ipl_into_image(IplImage* src, image im)
 {
     unsigned char *data = (unsigned char *)src->imageData;
@@ -635,9 +651,20 @@ image load_image_cv(char *filename, int channels)
     if( (src = cvLoadImage(filename, flag)) == 0 )
     {
         fprintf(stderr, "Cannot load image \"%s\"\n", filename);
-        char buff[256];
-        sprintf(buff, "echo %s >> bad.list", filename);
-        system(buff);
+
+        char buff[1024];
+        // Check the length of the buffer
+        if(strlen(filename) > 1024) {
+            sprintf(buff, "This filename is too long");
+        }
+        else {
+            sprintf(buff, "%s", filename);
+        }
+        // Write directly to the file rather than using the system call to write
+        FILE* bad_list = fopen("bad.list", "a");
+        fwrite(buff, sizeof(char), strlen(buff), bad_list);
+        fwrite("\n", 1, 1, bad_list);
+
         return make_image(10,10,3);
         //exit(0);
     }

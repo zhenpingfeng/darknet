@@ -229,9 +229,17 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     buff[0] = get_image_from_stream(cap);
     buff[1] = copy_image(buff[0]);
     buff[2] = copy_image(buff[0]);
-    buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[1] = letterbox_image(buff[0], net->w, net->h);
-    buff_letter[2] = letterbox_image(buff[0], net->w, net->h);
+    int resize = buff[0].w != net->w || buff[0].h != net->h;
+    if (resize) {
+        buff_letter[0] = letterbox_image(buff[0], net->w, net->h);
+        buff_letter[1] = copy_image(buff_letter[0]);
+        buff_letter[2] = copy_image(buff_letter[0]);
+    }
+    else {
+        buff_letter[0] = buff[0];
+        buff_letter[1] = buff[1];
+        buff_letter[2] = buff[2];
+    }
     ipl = cvCreateImage(cvSize(buff[0].w,buff[0].h), IPL_DEPTH_8U, buff[0].c);
 
     int count = 0;

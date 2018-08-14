@@ -138,7 +138,8 @@ void predict_regressor(char *cfgfile, char *weightfile, char *filename)
             strtok(input, "\n");
         }
         image im = load_image_color(input, 0, 0);
-        image sized = letterbox_image(im, net->w, net->h);
+        int resize = im.w != net->w || im.h != net->h;
+        image sized = resize ? letterbox_image(im, net->w, net->h) : im;
 
         float *X = sized.data;
         time=clock();
@@ -146,7 +147,7 @@ void predict_regressor(char *cfgfile, char *weightfile, char *filename)
         printf("Predicted: %f\n", predictions[0]);
         printf("%s: Predicted in %f seconds.\n", input, sec(clock()-time));
         free_image(im);
-        free_image(sized);
+        if (resize) free_image(sized);
         if (filename) break;
     }
 }
