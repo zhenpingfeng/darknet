@@ -132,20 +132,20 @@ layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size
         l.output_gpu = opencl_make_array(l.output, l.batch*l.out_h*l.out_w*n);
 
         if(batch_normalize){
-            l.mean_gpu = opencl_make_array(0, n);
-            l.variance_gpu = opencl_make_array(0, n);
+            l.mean_gpu = opencl_make_array(l.mean, n);
+            l.variance_gpu = opencl_make_array(l.variance, n);
 
-            l.rolling_mean_gpu = opencl_make_array(0, n);
-            l.rolling_variance_gpu = opencl_make_array(0, n);
+            l.rolling_mean_gpu = opencl_make_array(l.rolling_mean, n);
+            l.rolling_variance_gpu = opencl_make_array(l.rolling_variance, n);
 
-            l.mean_delta_gpu = opencl_make_array(0, n);
-            l.variance_delta_gpu = opencl_make_array(0, n);
+            l.mean_delta_gpu = opencl_make_array(l.mean_delta, n);
+            l.variance_delta_gpu = opencl_make_array(l.variance_delta, n);
 
             l.scales_gpu = opencl_make_array(l.scales, n);
-            l.scale_updates_gpu = opencl_make_array(0, n);
+            l.scale_updates_gpu = opencl_make_array(l.scale_updates, n);
 
-            l.x_gpu = opencl_make_array(0, l.batch*l.out_h*l.out_w*n);
-            l.x_norm_gpu = opencl_make_array(0, l.batch*l.out_h*l.out_w*n);
+            l.x_gpu = opencl_make_array(l.x, l.batch*l.out_h*l.out_w*n);
+            l.x_norm_gpu = opencl_make_array(l.x_norm, l.batch*l.out_h*l.out_w*n);
         }
     }
 #endif

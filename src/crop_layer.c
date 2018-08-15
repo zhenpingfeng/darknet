@@ -41,7 +41,7 @@ crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int 
         l.forward_gpu = forward_crop_layer_gpu;
         l.backward_gpu = backward_crop_layer_gpu;
         l.output_gpu = opencl_make_array(l.output, l.outputs * batch);
-        l.rand_gpu = opencl_make_array(0, l.batch * 8);
+        l.rand_gpu = opencl_make_array(l.rand, l.batch * 8);
     }
 #endif
     return l;

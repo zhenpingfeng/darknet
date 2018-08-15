@@ -17,6 +17,7 @@ GPU=1
 GPU_FAST=1
 GPU_MULTI=0
 OPENCV=1
+OPENMP=0
 RPI=0
 BENCHMARK=0
 DEBUG=0
@@ -57,6 +58,10 @@ OPTS=-O2
 else
 OPTS=-O2 -mfpmath=sse
 endif
+endif
+
+ifeq ($(OPENMP), 1)
+CFLAGS+= -fopenmp
 endif
 
 CFLAGS+=$(OPTS)

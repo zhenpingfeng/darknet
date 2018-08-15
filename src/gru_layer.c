@@ -95,15 +95,15 @@ layer make_gru_layer(int batch, int inputs, int outputs, int steps, int batch_no
         l.forward_gpu = forward_gru_layer_gpu;
         l.backward_gpu = backward_gru_layer_gpu;
         l.update_gpu = update_gru_layer_gpu;
-        l.forgot_state_gpu = opencl_make_array(0, batch * outputs);
-        l.forgot_delta_gpu = opencl_make_array(0, batch * outputs);
-        l.prev_state_gpu = opencl_make_array(0, batch * outputs);
-        l.state_gpu = opencl_make_array(0, batch * outputs);
-        l.output_gpu = opencl_make_array(0, batch * outputs * steps);
-        l.delta_gpu = opencl_make_array(0, batch * outputs * steps);
-        l.r_gpu = opencl_make_array(0, batch * outputs);
-        l.z_gpu = opencl_make_array(0, batch * outputs);
-        l.h_gpu = opencl_make_array(0, batch * outputs);
+        l.forgot_state_gpu = opencl_make_array(l.forgot_state, batch * outputs);
+        l.forgot_delta_gpu = opencl_make_array(l.forgot_delta, batch * outputs);
+        l.prev_state_gpu = opencl_make_array(l.prev_state, batch * outputs);
+        l.state_gpu = opencl_make_array(l.state, batch * outputs);
+        l.output_gpu = opencl_make_array(l.output, batch * outputs * steps);
+        l.delta_gpu = opencl_make_array(l.delta, batch * outputs * steps);
+        l.r_gpu = opencl_make_array(l.r_cpu, batch * outputs);
+        l.z_gpu = opencl_make_array(l.z_cpu, batch * outputs);
+        l.h_gpu = opencl_make_array(l.h_cpu, batch * outputs);
     }
 #endif
 

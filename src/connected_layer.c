@@ -95,12 +95,12 @@ layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activa
         l.output_gpu = opencl_make_array(l.output, outputs * batch);
         l.delta_gpu = opencl_make_array(l.delta, outputs * batch);
         if (adam) {
-            l.m_gpu = opencl_make_array(0, inputs * outputs);
-            l.v_gpu = opencl_make_array(0, inputs * outputs);
-            l.bias_m_gpu = opencl_make_array(0, outputs);
-            l.bias_v_gpu = opencl_make_array(0, outputs);
-            l.scale_m_gpu = opencl_make_array(0, outputs);
-            l.scale_v_gpu = opencl_make_array(0, outputs);
+            l.m_gpu = opencl_make_array(l.m, inputs * outputs);
+            l.v_gpu = opencl_make_array(l.v, inputs * outputs);
+            l.bias_m_gpu = opencl_make_array(l.bias_m, outputs);
+            l.bias_v_gpu = opencl_make_array(l.bias_v, outputs);
+            l.scale_m_gpu = opencl_make_array(l.scale_m, outputs);
+            l.scale_v_gpu = opencl_make_array(l.scale_v, outputs);
         }
 
         if (batch_normalize) {

@@ -110,24 +110,24 @@ layer make_lstm_layer(int batch, int inputs, int outputs, int steps, int batch_n
         l.backward_gpu = backward_lstm_layer_gpu;
         l.update_gpu = update_lstm_layer_gpu;
 
-        l.output_gpu = opencl_make_array(0, batch * outputs * steps);
-        l.delta_gpu = opencl_make_array(0, batch * l.outputs * steps);
+        l.output_gpu = opencl_make_array(l.output, batch * outputs * steps);
+        l.delta_gpu = opencl_make_array(l.delta, batch * l.outputs * steps);
 
-        l.prev_state_gpu = opencl_make_array(0, batch * outputs);
-        l.prev_cell_gpu = opencl_make_array(0, batch * outputs);
-        l.cell_gpu = opencl_make_array(0, batch * outputs * steps);
+        l.prev_state_gpu = opencl_make_array(l.prev_state, batch * outputs);
+        l.prev_cell_gpu = opencl_make_array(l.prev_cell_cpu, batch * outputs);
+        l.cell_gpu = opencl_make_array(l.cell_cpu, batch * outputs * steps);
 
-        l.f_gpu = opencl_make_array(0, batch * outputs);
-        l.i_gpu = opencl_make_array(0, batch * outputs);
-        l.g_gpu = opencl_make_array(0, batch * outputs);
-        l.o_gpu = opencl_make_array(0, batch * outputs);
-        l.c_gpu = opencl_make_array(0, batch * outputs);
-        l.h_gpu = opencl_make_array(0, batch * outputs);
-        l.temp_gpu = opencl_make_array(0, batch * outputs);
-        l.temp2_gpu = opencl_make_array(0, batch * outputs);
-        l.temp3_gpu = opencl_make_array(0, batch * outputs);
-        l.dc_gpu = opencl_make_array(0, batch * outputs);
-        l.dh_gpu = opencl_make_array(0, batch * outputs);
+        l.f_gpu = opencl_make_array(l.f_cpu, batch * outputs);
+        l.i_gpu = opencl_make_array(l.i_cpu, batch * outputs);
+        l.g_gpu = opencl_make_array(l.g_cpu, batch * outputs);
+        l.o_gpu = opencl_make_array(l.o_cpu, batch * outputs);
+        l.c_gpu = opencl_make_array(l.c_cpu, batch * outputs);
+        l.h_gpu = opencl_make_array(l.h_cpu, batch * outputs);
+        l.temp_gpu = opencl_make_array(l.temp_cpu, batch * outputs);
+        l.temp2_gpu = opencl_make_array(l.temp2_cpu, batch * outputs);
+        l.temp3_gpu = opencl_make_array(l.temp3_cpu, batch * outputs);
+        l.dc_gpu = opencl_make_array(l.dc_cpu, batch * outputs);
+        l.dh_gpu = opencl_make_array(l.dh_cpu, batch * outputs);
     }
 #endif
 

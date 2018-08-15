@@ -69,8 +69,8 @@ layer make_rnn_layer(int batch, int inputs, int outputs, int steps, ACTIVATION a
         l.forward_gpu = forward_rnn_layer_gpu;
         l.backward_gpu = backward_rnn_layer_gpu;
         l.update_gpu = update_rnn_layer_gpu;
-        l.state_gpu = opencl_make_array(0, batch * outputs);
-        l.prev_state_gpu = opencl_make_array(0, batch * outputs);
+        l.state_gpu = opencl_make_array(l.state, batch * outputs);
+        l.prev_state_gpu = opencl_make_array(l.prev_state, batch * outputs);
         l.output_gpu = l.output_layer->output_gpu;
         l.delta_gpu = l.output_layer->delta_gpu;
     }

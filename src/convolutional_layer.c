@@ -204,7 +204,7 @@ convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int
         }
         if(xnor){
             l.binary_weights_gpu = opencl_make_array(l.weights, l.nweights);
-            l.binary_input_gpu = opencl_make_array(0, l.inputs*l.batch);
+            l.binary_input_gpu = opencl_make_array(l.binary_input, l.inputs*l.batch);
         }
 
         if(batch_normalize){
