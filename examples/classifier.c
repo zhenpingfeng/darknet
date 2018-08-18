@@ -159,6 +159,9 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
             sprintf(buff, "%s/%s.backup",backup_directory,base);
             save_weights(net, buff);
         }
+#ifdef GPU_STATS
+        opencl_dump_mem_stat();
+#endif
 #ifdef BENCHMARK
         break;
 #endif

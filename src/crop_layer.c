@@ -61,7 +61,7 @@ void resize_crop_layer(layer *l, int w, int h)
     l->output = realloc(l->output, l->batch*l->outputs*sizeof(float));
 #ifdef GPU
     if (gpu_index >= 0) {
-        opencl_free(l->output_gpu);
+        opencl_free_gpu_only(l->output_gpu);
         l->output_gpu = opencl_make_array(l->output, l->outputs * l->batch);
     }
 #endif

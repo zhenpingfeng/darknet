@@ -87,7 +87,7 @@ image get_convolutional_delta(convolutional_layer l)
 
 static size_t get_workspace_size(layer l){
 
-    return (size_t)l.out_h*l.out_w*l.size*l.size*l.c/l.groups*sizeof(float);
+    return (size_t)l.out_h*l.out_w*l.size*l.size*l.c/l.groups;
 }
 
 convolutional_layer make_convolutional_layer(int batch, int h, int w, int c, int n, int groups, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int binary, int xnor, int adam)
@@ -275,16 +275,6 @@ void test_convolutional_layer()
 
 void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 {
-#ifdef GPU
-    if (gpu_index >= 0) {
-        if (l->delta_gpu.ptr) opencl_free_gpu_only(l->delta_gpu);
-        if (l->output_gpu.ptr) opencl_free_gpu_only(l->output_gpu);
-        if (l->batch_normalize) {
-            opencl_free_gpu_only(l->x_gpu);
-            opencl_free_gpu_only(l->x_norm_gpu);
-        }
-    }
-#endif
     l->w = w;
     l->h = h;
     int out_w = convolutional_out_width(*l);
@@ -305,6 +295,13 @@ void resize_convolutional_layer(convolutional_layer *l, int w, int h)
 
 #ifdef GPU
     if (gpu_index >= 0) {
+        if (l->delta_gpu.mem) opencl_free_gpu_only(l->delta_gpu);
+        if (l->output_gpu.mem) opencl_free_gpu_only(l->output_gpu);
+        if (l->batch_normalize) {
+            opencl_free_gpu_only(l->x_gpu);
+            opencl_free_gpu_only(l->x_norm_gpu);
+        }
+
         l->delta_gpu = opencl_make_array(l->delta, l->batch * l->outputs);
         l->output_gpu = opencl_make_array(l->output, l->batch * l->outputs);
         if (l->batch_normalize) {

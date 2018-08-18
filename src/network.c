@@ -428,17 +428,18 @@ int resize_network(network *net, int w, int h)
         net->truth_gpu = opencl_make_array(net->truth, net->truths * net->batch);
         net->delta_gpu = opencl_make_array(net->delta, net->outputs * net->batch);
         if(workspace_size){
+            //printf("%ld\n", workspace_size*sizeof(float));
             opencl_free(net->workspace_gpu);
-            net->workspace = calloc(1, workspace_size);
-            net->workspace_gpu = opencl_make_array(net->workspace, (workspace_size-1)/sizeof(float)+1);
+            net->workspace = calloc(workspace_size, sizeof(float));
+            net->workspace_gpu = opencl_make_array(net->workspace, workspace_size);
         }
     }else {
         free(net->workspace);
-        net->workspace = calloc(1, workspace_size);
+        net->workspace = calloc(workspace_size, sizeof(float));
     }
 #else
     free(net->workspace);
-    net->workspace = calloc(1, workspace_size);
+    net->workspace = calloc(workspace_size, sizeof(float));
 #endif
     //fprintf(stderr, " Done!\n");
     return 0;

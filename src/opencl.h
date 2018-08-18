@@ -1,6 +1,8 @@
 #ifndef OPENCL_H
 #define OPENCL_H
 
+//#define GPU_STATS
+
 #ifdef RPI
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #endif
@@ -40,9 +42,9 @@ extern int ngpusg;
 extern __thread int opencl_device_id_t;
 extern __thread int opencl_device_ct_t;
 
-extern int *cl_native_double_width_s;
-extern int *cl_native_max_group_size_s;
-extern int *cl_native_address_bits_s;
+extern cl_int *cl_native_double_width_s;
+extern size_t *cl_native_max_group_size_s;
+extern size_t *cl_native_address_bits_s;
 
 typedef struct _cl_mem_ext cl_mem_ext;
 
@@ -70,7 +72,6 @@ cl_mem_ext upd(cl_mem_ext buf, size_t len);
 cl_context opencl_context;
 cl_command_queue* opencl_queues;
 cl_device_id* opencl_devices;
-cl_bool* opencl_foreign_contexts;
 
 void activation_kernel_init(void);
 void blas_kernel_init(void);
@@ -117,6 +118,7 @@ cl_mem_ext opencl_random(cl_mem_ext x_gpu, size_t n);
 cl_mem_ext opencl_make_array(float *x, size_t n);
 cl_mem_ext opencl_make_int_array(int *x, size_t n);
 dim2 opencl_gridsize(const int n);
+void opencl_dump_mem_stat();
 
 #endif // GPU
 #endif // OPENCL_H

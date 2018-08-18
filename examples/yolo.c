@@ -68,6 +68,9 @@ void train_yolo(char *cfgfile, char *weightfile)
             save_weights(net, buff);
         }
         free_data(train);
+#ifdef GPU_STATS
+        opencl_dump_mem_stat();
+#endif
 #ifdef BENCHMARK
         break;
 #endif

@@ -880,16 +880,16 @@ network *parse_network_cfg(char *filename)
     }
 #endif
     if(workspace_size){
-        //printf("%ld\n", workspace_size);
+        //printf("%ld\n", workspace_size*sizeof(float));
 #ifdef GPU
         if(gpu_index >= 0){
-            net->workspace = calloc(1, workspace_size);
-            net->workspace_gpu = opencl_make_array(net->workspace, (workspace_size-1)/sizeof(float)+1);
+            net->workspace = calloc(workspace_size, sizeof(float));
+            net->workspace_gpu = opencl_make_array(net->workspace, workspace_size);
         }else {
-            net->workspace = calloc(1, workspace_size);
+            net->workspace = calloc(workspace_size, sizeof(float));
         }
 #else
-        net->workspace = calloc(1, workspace_size);
+        net->workspace = calloc(workspace_size, sizeof(float));
 #endif
     }
     return net;

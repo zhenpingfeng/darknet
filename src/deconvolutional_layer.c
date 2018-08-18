@@ -192,15 +192,15 @@ void resize_deconvolutional_layer(layer *l, int h, int w)
 
 #ifdef GPU
     if (gpu_index >= 0) {
-        opencl_free(l->delta_gpu);
-        opencl_free(l->output_gpu);
+        opencl_free_gpu_only(l->delta_gpu);
+        opencl_free_gpu_only(l->output_gpu);
 
         l->delta_gpu = opencl_make_array(l->delta, l->batch * l->outputs);
         l->output_gpu = opencl_make_array(l->output, l->batch * l->outputs);
 
         if (l->batch_normalize) {
-            opencl_free(l->x_gpu);
-            opencl_free(l->x_norm_gpu);
+            opencl_free_gpu_only(l->x_gpu);
+            opencl_free_gpu_only(l->x_norm_gpu);
 
             l->x_gpu = opencl_make_array(l->output, l->batch * l->outputs);
             l->x_norm_gpu = opencl_make_array(l->output, l->batch * l->outputs);

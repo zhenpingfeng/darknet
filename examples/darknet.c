@@ -518,6 +518,7 @@ int main(int argc, char **argv)
     if (gpu_index >= 0) {
         opencl_deinit(gpus, ngpus);
     }
+    free(gpus);
 #endif
     return 0;
 }

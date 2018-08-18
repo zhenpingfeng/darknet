@@ -41,12 +41,6 @@ layer make_shortcut_layer(int batch, int index, int w, int h, int c, int w2, int
 
 void resize_shortcut_layer(layer *l, int w, int h)
 {
-#ifdef GPU
-    if (gpu_index >= 0) {
-        opencl_free_gpu_only(l->output_gpu);
-        opencl_free_gpu_only(l->delta_gpu);
-    }
-#endif
     assert(l->w == l->out_w);
     assert(l->h == l->out_h);
     l->w = l->out_w = w;
@@ -58,6 +52,9 @@ void resize_shortcut_layer(layer *l, int w, int h)
 
 #ifdef GPU
     if (gpu_index >= 0) {
+        opencl_free_gpu_only(l->output_gpu);
+        opencl_free_gpu_only(l->delta_gpu);
+
         l->output_gpu = opencl_make_array(l->output, l->outputs * l->batch);
         l->delta_gpu = opencl_make_array(l->delta, l->outputs * l->batch);
     }

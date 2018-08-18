@@ -44,12 +44,6 @@ layer make_upsample_layer(int batch, int w, int h, int c, int stride)
 
 void resize_upsample_layer(layer *l, int w, int h)
 {
-#ifdef GPU
-    if (gpu_index >= 0) {
-        opencl_free_gpu_only(l->output_gpu);
-        opencl_free_gpu_only(l->delta_gpu);
-    }
-#endif
     l->w = w;
     l->h = h;
     l->out_w = w*l->stride;
@@ -65,6 +59,9 @@ void resize_upsample_layer(layer *l, int w, int h)
 
 #ifdef GPU
     if (gpu_index >= 0) {
+        opencl_free_gpu_only(l->output_gpu);
+        opencl_free_gpu_only(l->delta_gpu);
+
         l->output_gpu = opencl_make_array(l->output, l->outputs * l->batch);
         l->delta_gpu = opencl_make_array(l->delta, l->outputs * l->batch);
     }

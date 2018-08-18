@@ -153,6 +153,9 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
             save_weights(net, buff);
         }
         free_data(train);
+#ifdef GPU_STATS
+        opencl_dump_mem_stat();
+#endif
 #ifdef BENCHMARK
         break;
 #endif

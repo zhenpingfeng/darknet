@@ -29,9 +29,11 @@ int ngpusg;
 __thread int opencl_device_id_t;
 __thread int opencl_device_ct_t;
 
-int *cl_native_double_width_s;
-int *cl_native_address_bits_s;
-int *cl_native_max_group_size_s;
+cl_int *cl_native_double_width_s;
+size_t *cl_native_max_group_size_s;
+size_t *cl_native_address_bits_s;
+
+cl_context_properties* cl_props;
 
 const char* clGetErrorString(int errorCode) {
     switch (errorCode) {
@@ -505,11 +507,11 @@ void opencl_load_buffer(const char *buffer, const size_t size, cl_program *outpu
             prog[0],
             opencl_device_ct_t,
             opencl_devices,
-          //"-cl-denorms-are-zero "
-          //"-cl-fp32-correctly-rounded-divide-sqrt "
+            "-cl-denorms-are-zero "
+            "-cl-fp32-correctly-rounded-divide-sqrt "
             "-cl-std=CL1.2 "
             "-Werror "
-            ,
+            "",
             1, input_headers, input_header_names,
             NULL, NULL);
 
@@ -528,8 +530,8 @@ void opencl_load_buffer(const char *buffer, const size_t size, cl_program *outpu
 
     *output =
             clLinkProgram(opencl_context, opencl_device_ct_t, opencl_devices,
-                  //"-cl-denorms-are-zero "
-                  //"-cl-kernel-arg-info"
+                    "-cl-denorms-are-zero "
+                    "-cl-kernel-arg-info "
                     "", 1, prog, NULL, NULL, &clErr);
 
     if (clErr != CL_SUCCESS)
@@ -571,7 +573,10 @@ void opencl_init(int *gpus, int ngpus) {
     cl_platform_id clPlatform = 0;
     cl_uint clNumPlatforms = 0;
 
-    cl_context_properties clProps[3] = {CL_CONTEXT_PLATFORM, 0, 0};
+    cl_props = calloc(3, sizeof(cl_context_properties));
+    cl_props[0] = CL_CONTEXT_PLATFORM;
+    cl_props[1] = 0;
+    cl_props[2] = 0;
 
     clErr = clGetPlatformIDs(CL_TRUE, &clPlatform, &clNumPlatforms);
 
@@ -592,7 +597,6 @@ void opencl_init(int *gpus, int ngpus) {
 
     opencl_queues = (cl_command_queue *) calloc((cl_uint)ngpus, sizeof(cl_command_queue));
     opencl_devices = (cl_device_id *) calloc((cl_uint)ngpus, sizeof(cl_device_id));
-    opencl_foreign_contexts = (cl_bool *) calloc((cl_uint)ngpus, sizeof(cl_bool));
 
     int i;
     for(i = 0; i < ngpus; ++i)
@@ -600,10 +604,10 @@ void opencl_init(int *gpus, int ngpus) {
         opencl_devices[i] = devices[gpus[i]];
     }
 
-    clProps[1] = (cl_context_properties) clPlatform;
+    cl_props[1] = (cl_context_properties) clPlatform;
 
-    opencl_context = clCreateContext(clProps, (cl_uint)ngpus,
-                                                      opencl_devices, NULL, NULL, &clErr);
+    opencl_context = clCreateContext(cl_props, (cl_uint)ngpus,
+                                     opencl_devices, NULL, NULL, &clErr);
 
     if (clErr != CL_SUCCESS) {
         printf("opencl_init: Could not create context.\n");
@@ -614,8 +618,7 @@ void opencl_init(int *gpus, int ngpus) {
     for (d = 0; d < ngpus; ++d) {
         opencl_device_id_t = d;
 
-        opencl_queues[opencl_device_id_t] = clCreateCommandQueue(
-			                        opencl_context,
+        opencl_queues[opencl_device_id_t] = clCreateCommandQueue(opencl_context,
                                                 opencl_devices[opencl_device_id_t], CL_FALSE, &clErr);
 
         if (clErr != CL_SUCCESS) {
@@ -623,7 +626,9 @@ void opencl_init(int *gpus, int ngpus) {
             return;
         }
 
-        opencl_foreign_contexts[opencl_device_id_t] = CL_FALSE;
+        cl_native_double_width_s[opencl_device_id_t] = 0;
+        cl_native_max_group_size_s[opencl_device_id_t] = 0;
+        cl_native_address_bits_s[opencl_device_id_t] = 0;
 
         clGetDeviceInfo(opencl_devices[opencl_device_id_t], CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE, sizeof(cl_uint), &cl_native_double_width_s[opencl_device_id_t], NULL);
         clGetDeviceInfo(opencl_devices[opencl_device_id_t], CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &cl_native_max_group_size_s[opencl_device_id_t], NULL);
@@ -644,8 +649,8 @@ void opencl_init(int *gpus, int ngpus) {
         clGetDeviceInfo(opencl_devices[opencl_device_id_t], CL_DRIVER_VERSION, bufferSize * sizeof(char), buffer, NULL);
         printf("Device opencl used: %s\n", buffer);
         printf("Device double precision: %s\n", cl_native_double_width_s[opencl_device_id_t] == 0 ? "NO" : "YES");
-        printf("Device max group size: %d\n", cl_native_max_group_size_s[opencl_device_id_t]);
-        printf("Device address bits: %d\n", cl_native_address_bits_s[opencl_device_id_t]);
+        printf("Device max group size: %zu\n", cl_native_max_group_size_s[opencl_device_id_t]);
+        printf("Device address bits: %zu\n", cl_native_address_bits_s[opencl_device_id_t]);
         free(buffer);
 #endif
         activation_kernel_init();
@@ -684,12 +689,6 @@ void opencl_deinit(int *gpus, int ngpus)
         clFinish(opencl_queues[opencl_device_id_t]);
         gpu_index = -1;
 
-        if (opencl_foreign_contexts[opencl_device_id_t]) {
-            opencl_context = 0;
-            opencl_queues[opencl_device_id_t] = 0;
-            return;
-        }
-
         activation_kernel_release();
         blas_kernel_release();
         col2im_kernel_release();
@@ -704,15 +703,19 @@ void opencl_deinit(int *gpus, int ngpus)
         dropout_kernel_release();
 
         clReleaseCommandQueue(opencl_queues[opencl_device_id_t]);
-        clReleaseContext(opencl_context);
-
         opencl_queues[opencl_device_id_t] = 0;
-        opencl_context = 0;
     }
+
+    free(cl_props);
+    clReleaseContext(opencl_context);
+    opencl_context = 0;
 
     free(opencl_queues);
     free(opencl_devices);
-    free(opencl_foreign_contexts);
+
+    free(cl_native_double_width_s);
+    free(cl_native_max_group_size_s);
+    free(cl_native_address_bits_s);
 }
 
 void opencl_kernel(cl_kernel kernel, const dim2 globalItemSize, const int argc, ...)
@@ -799,11 +802,22 @@ void opencl_kernel(cl_kernel kernel, const dim2 globalItemSize, const int argc, 
 cl_mem_ext opencl_random(cl_mem_ext x_gpu, size_t n)
 {
     int i;
-    float *m = calloc(n, sizeof(float));
+    float *m;
+    if (!x_gpu.ptr)
+    {
+        m = calloc(n, sizeof(float));
+    } else {
+        m = x_gpu.ptr;
+    }
     for(i = 0; i < n; ++i){
         m[i] = (float)rand()/RAND_MAX;
     }
-    x_gpu = opencl_make_array(m, n);
+    if (!x_gpu.ptr) {
+        x_gpu = opencl_make_array(m, n);
+    }
+    else {
+        opencl_push_array(x_gpu, m, n);
+    }
     return x_gpu;
 }
 
@@ -841,7 +855,7 @@ void opencl_dump_mem_stat()
     clGetDeviceInfo(opencl_devices[opencl_device_id_t], CL_DEVICE_LOCAL_MEM_SIZE,
                     sizeof(size_t), &used, NULL);
 
-    printf("OpenCL memory status: Free/Total = [%lu]/[%lu]\n", total - used, total);
+    printf("OpenCL memory status: Used/Free/Total = [%lu]/[%lu]/[%lu]\n", used, total - used, total);
 }
 
 cl_mem_ext opencl_make_array(float *x, size_t n)

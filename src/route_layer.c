@@ -40,13 +40,6 @@ route_layer make_route_layer(int batch, int n, int *input_layers, int *input_siz
 
 void resize_route_layer(route_layer *l, network *net)
 {
-#ifdef GPU
-    if (gpu_index >= 0) {
-        opencl_free_gpu_only(l->output_gpu);
-        opencl_free_gpu_only(l->delta_gpu);
-    }
-#endif
-
     int i;
     layer first = net->layers[l->input_layers[0]];
     l->out_w = first.out_w;
@@ -72,6 +65,9 @@ void resize_route_layer(route_layer *l, network *net)
 
 #ifdef GPU
     if (gpu_index >= 0) {
+        opencl_free_gpu_only(l->output_gpu);
+        opencl_free_gpu_only(l->delta_gpu);
+
         l->output_gpu = opencl_make_array(l->output, l->outputs * l->batch);
         l->delta_gpu = opencl_make_array(l->delta, l->outputs * l->batch);
     }

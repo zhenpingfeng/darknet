@@ -32,7 +32,7 @@ void resize_dropout_layer(dropout_layer *l, int inputs)
     l->rand = realloc(l->rand, l->inputs*l->batch*sizeof(float));
 #ifdef GPU
     if (gpu_index >= 0) {
-        opencl_free(l->rand_gpu);
+        opencl_free_gpu_only(l->rand_gpu);
         l->rand_gpu = opencl_make_array(l->rand, inputs * l->batch);
     }
 #endif

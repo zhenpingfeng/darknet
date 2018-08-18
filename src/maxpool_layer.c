@@ -55,13 +55,6 @@ maxpool_layer make_maxpool_layer(int batch, int h, int w, int c, int size, int s
 
 void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 {
-#ifdef GPU
-    if (gpu_index >= 0) {
-        opencl_free_gpu_only(l->indexes_gpu);
-        opencl_free_gpu_only(l->output_gpu);
-        opencl_free_gpu_only(l->delta_gpu);
-    }
-#endif
     l->h = h;
     l->w = w;
     l->inputs = h*w*l->c;
@@ -77,6 +70,10 @@ void resize_maxpool_layer(maxpool_layer *l, int w, int h)
 
     #ifdef GPU
     if (gpu_index >= 0) {
+        opencl_free_gpu_only(l->indexes_gpu);
+        opencl_free_gpu_only(l->output_gpu);
+        opencl_free_gpu_only(l->delta_gpu);
+
         l->indexes_gpu = opencl_make_int_array(l->indexes, output_size);
         l->output_gpu = opencl_make_array(l->output, output_size);
         l->delta_gpu = opencl_make_array(l->delta, output_size);

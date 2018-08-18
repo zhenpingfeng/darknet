@@ -57,12 +57,6 @@ layer make_region_layer(int batch, int w, int h, int n, int classes, int coords)
 
 void resize_region_layer(layer *l, int w, int h)
 {
-#ifdef GPU
-    if (gpu_index >= 0) {
-        opencl_free_gpu_only(l->delta_gpu);
-        opencl_free_gpu_only(l->output_gpu);
-    }
-#endif
     l->w = w;
     l->h = h;
 
@@ -74,6 +68,9 @@ void resize_region_layer(layer *l, int w, int h)
 
 #ifdef GPU
     if (gpu_index >= 0) {
+        opencl_free_gpu_only(l->delta_gpu);
+        opencl_free_gpu_only(l->output_gpu);
+
         l->delta_gpu = opencl_make_array(l->delta, l->batch * l->outputs);
         l->output_gpu = opencl_make_array(l->output, l->batch * l->outputs);
     }
